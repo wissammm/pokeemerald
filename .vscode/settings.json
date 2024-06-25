@@ -1,0 +1,9 @@
+{
+    "mgba_file": "/usr/bin/mgba",
+    "gdb_file": "/opt/devkitpro/devkitARM/bin/arm-none-eabi-gdb",
+    "terminal.integrated.confirmOnExit": "always",
+    "files.associations": {
+        "*.inc": "arm"
+    },
+    "terminal.integrated.shell.linux": "/bin/bash"
+}
