@@ -14,7 +14,7 @@
             "environment": [],
             "externalConsole": false,
             "miDebuggerServerAddress": "${env:TODAYSIP}:2345",
-            "debugServerArgs": "${workspaceRoot}/pokeemerald_modern.elf -g",
+            "debugServerArgs": "${workspaceRoot}/pokeemerald_modern.elf -g -O0",
             "serverStarted": "started",
             "preLaunchTask": "${defaultBuildTask}",
             "logging": {

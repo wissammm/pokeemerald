@@ -3,7 +3,11 @@
     "gdb_file": "/opt/devkitpro/devkitARM/bin/arm-none-eabi-gdb",
     "terminal.integrated.confirmOnExit": "always",
     "files.associations": {
-        "*.inc": "arm"
+        "*.inc": "arm",
+        "gpu_regs.h": "c",
+        "international_string_util.h": "c",
+        "random": "c",
+        "battle_string_ids.h": "c"
     },
     "terminal.integrated.shell.linux": "/bin/bash"
 }

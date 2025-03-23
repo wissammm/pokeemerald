@@ -706,7 +706,7 @@ static void CB2_InitBattleInternal(void)
     for (i = 0; i < PARTY_SIZE; i++)
         AdjustFriendship(&gPlayerParty[i], FRIENDSHIP_EVENT_LEAGUE_BATTLE);
 
-    gBattleCommunication[MULTIUSE_STATE] = 0;
+        gBattleCommunication[MULTIUSE_STATE] = 0;
 }
 
 #define BUFFER_PARTY_VS_SCREEN_STATUS(party, flags, i)                      \
@@ -954,7 +954,7 @@ static void CB2_HandleStartBattle(void)
 {
     u8 playerMultiplayerId;
     u8 enemyMultiplayerId;
-
+    //BATTLE:Wissam: Start Battle
     RunTasks();
     AnimateSprites();
     BuildOamBuffer();
@@ -3018,6 +3018,8 @@ void BeginBattleIntro(void)
 {
     BattleStartClearSetData();
     gBattleCommunication[1] = 0;
+    //BATTLE:Wissam: Important, we can change
+    //the monter data in this function maybe
     gBattleMainFunc = BattleIntroGetMonsData;
 }
 
@@ -3037,7 +3039,8 @@ static void BattleStartClearSetData(void)
 
     TurnValuesCleanUp(FALSE);
     SpecialStatusesClear();
-
+    // BATTLE:Wissam: Clear the data of the fight, 
+    // variables like that "gStatuses3" are stocked in EWROM 
     for (i = 0; i < MAX_BATTLERS_COUNT; i++)
     {
         gStatuses3[i] = 0;
@@ -3145,12 +3148,13 @@ static void BattleStartClearSetData(void)
     gBattleStruct->arenaLostOpponentMons = 0;
 }
 
+#define Monster 12
 void SwitchInClearSetData(void)
 {
     struct DisableStruct disableStructCopy = gDisableStructs[gActiveBattler];
     s32 i;
     u8 *ptr;
-
+    // gBattleMons[gActiveBattler].species = Monster;
     if (gBattleMoves[gCurrentMove].effect != EFFECT_BATON_PASS)
     {
         for (i = 0; i < NUM_BATTLE_STATS; i++)
@@ -3399,6 +3403,7 @@ static void BattleIntroDrawTrainersOrMonsSprites(void)
         if ((gBattleTypeFlags & BATTLE_TYPE_SAFARI)
             && GetBattlerSide(gActiveBattler) == B_SIDE_PLAYER)
         {
+            u16 monster = 10;
             ptr = (u8 *)&gBattleMons[gActiveBattler];
             for (i = 0; i < sizeof(struct BattlePokemon); i++)
                 ptr[i] = 0;
@@ -4175,7 +4180,7 @@ static void HandleTurnActionSelectionState(void)
                         moveInfo.species = gBattleMons[gActiveBattler].species;
                         moveInfo.monType1 = gBattleMons[gActiveBattler].type1;
                         moveInfo.monType2 = gBattleMons[gActiveBattler].type2;
-
+                        //BATTLE:Wissam: gBattleMons interesting
                         for (i = 0; i < MAX_MON_MOVES; i++)
                         {
                             moveInfo.moves[i] = gBattleMons[gActiveBattler].moves[i];
