@@ -585,6 +585,8 @@ const u8 * const gStatusConditionStringsTable[][2] =
     {gStatusConditionString_LoveJpn, gText_Love}
 };
 
+// @batlle : This function initializes the battle by 
+// setting up necessary resources and determining the type of battle to start.
 void CB2_InitBattle(void)
 {
     MoveSaveBlocks_ResetHeap();
