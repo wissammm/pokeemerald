@@ -108,7 +108,7 @@ static void SetActionsAndBattlersTurnOrder(void);
 static void UpdateBattlerPartyOrdersOnSwitch(void);
 static bool8 AllAtActionConfirmed(void);
 static void CheckFocusPunch_ClearVarsBeforeTurnStarts(void);
-static void FreeResetData_ReturnToOvOrDoEvolutions(void);
+static void FreeRestoreBattleData(void);
 static void ReturnFromBattleToOverworld(void);
 static void TryEvolvePokemon(void);
 static void WaitForEvoSceneToFinish(void);
@@ -585,6 +585,7 @@ const u8 * const gStatusConditionStringsTable[][2] =
     {gStatusConditionString_LoveJpn, gText_Love}
 };
 
+// id:597904
 // @batlle : This function initializes the battle by 
 // setting up necessary resources and determining the type of battle to start.
 void CB2_InitBattle(void)
@@ -595,6 +596,7 @@ void CB2_InitBattle(void)
     AllocateMonSpritesGfx();
     RecordedBattle_ClearFrontierPassFlag();
 
+    // we don't care about Batlle_multi for now 
     if (gBattleTypeFlags & BATTLE_TYPE_MULTI)
     {
         if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
@@ -614,27 +616,46 @@ void CB2_InitBattle(void)
     }
     else
     {
+        // here's where the function really begin for us 
         CB2_InitBattleInternal();
     }
 }
 
+/**
+ * @batlle
+ * @id:891663
+ * @brief Initializes the internal state for a battle.
+ *
+ * This function sets up the necessary resources and configurations for starting a battle.
+ * It handles various battle types, including multi-battles and link battles.
+ * It also sets up the graphics and background for the battle scene.
+ *
+ * @note This function is called internally to prepare the battle environment.
+ *
+ * @return void
+ */
 static void CB2_InitBattleInternal(void)
 {
     s32 i;
 
+    // Disable HBlank and VBlank callbacks
     SetHBlankCallback(NULL);
     SetVBlankCallback(NULL);
 
+    // Clear VRAM
     CpuFill32(0, (void *)(VRAM), VRAM_SIZE);
 
+    // Reset GPU registers
     SetGpuReg(REG_OFFSET_MOSAIC, 0);
     SetGpuReg(REG_OFFSET_WIN0H, DISPLAY_WIDTH);
     SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(DISPLAY_HEIGHT / 2, DISPLAY_HEIGHT / 2 + 1));
     SetGpuReg(REG_OFFSET_WININ, 0);
     SetGpuReg(REG_OFFSET_WINOUT, 0);
 
+    // Set initial window dimensions
     gBattle_WIN0H = DISPLAY_WIDTH;
 
+    // Handle special case for in-game partner battles
     if (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER && gPartnerTrainerId != TRAINER_STEVEN_PARTNER)
     {
         gBattle_WIN0V = DISPLAY_HEIGHT - 1;
@@ -646,6 +667,7 @@ static void CB2_InitBattleInternal(void)
         gBattle_WIN0V = WIN_RANGE(DISPLAY_HEIGHT / 2, DISPLAY_HEIGHT / 2 + 1);
         ScanlineEffect_Clear();
 
+        // Set up scanline effect parameters
         for (i = 0; i < DISPLAY_HEIGHT / 2; i++)
         {
             gScanlineEffectRegBuffers[0][i] = 0xF0;
@@ -661,7 +683,10 @@ static void CB2_InitBattleInternal(void)
         ScanlineEffect_SetParams(sIntroScanlineParams16Bit);
     }
 
+    // Reset palette fade
     ResetPaletteFade();
+
+    // Initialize background positions
     gBattle_BG0_X = 0;
     gBattle_BG0_Y = 0;
     gBattle_BG1_X = 0;
@@ -671,10 +696,12 @@ static void CB2_InitBattleInternal(void)
     gBattle_BG3_X = 0;
     gBattle_BG3_Y = 0;
 
+    // Set battle terrain
     gBattleTerrain = BattleSetup_GetTerrainId();
     if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
         gBattleTerrain = BATTLE_TERRAIN_BUILDING;
 
+    // Initialize battle background video
     InitBattleBgsVideo();
     LoadBattleTextboxAndBackground();
     ResetSpriteData();
@@ -682,9 +709,14 @@ static void CB2_InitBattleInternal(void)
     DrawBattleEntryBackground();
     FreeAllSpritePalettes();
     gReservedSpritePaletteCount = MAX_BATTLERS_COUNT;
+
+    // Set VBlank callback
     SetVBlankCallback(VBlankCB_Battle);
+
+    // Set up battle variables and Birch's Zigzagoon
     SetUpBattleVarsAndBirchZigzagoon();
 
+    // Handle different battle types
     if (gBattleTypeFlags & BATTLE_TYPE_MULTI && gBattleTypeFlags & BATTLE_TYPE_BATTLE_TOWER)
         SetMainCallback2(CB2_HandleStartMultiPartnerBattle);
     else if (gBattleTypeFlags & BATTLE_TYPE_MULTI && gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER)
@@ -694,6 +726,7 @@ static void CB2_InitBattleInternal(void)
     else
         SetMainCallback2(CB2_HandleStartBattle);
 
+    // Create NPC trainer party if not a link or recorded battle
     if (!(gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED)))
     {
         CreateNPCTrainerParty(&gEnemyParty[0], gTrainerBattleOpponent_A, TRUE);
@@ -702,13 +735,15 @@ static void CB2_InitBattleInternal(void)
         SetWildMonHeldItem();
     }
 
+    // Set battle state
     gMain.inBattle = TRUE;
     gSaveBlock2Ptr->frontier.disableRecordBattle = FALSE;
 
+    // Adjust friendship for player's party
     for (i = 0; i < PARTY_SIZE; i++)
         AdjustFriendship(&gPlayerParty[i], FRIENDSHIP_EVENT_LEAGUE_BATTLE);
 
-        gBattleCommunication[MULTIUSE_STATE] = 0;
+    gBattleCommunication[MULTIUSE_STATE] = 0;
 }
 
 #define BUFFER_PARTY_VS_SCREEN_STATUS(party, flags, i)                      \
@@ -952,22 +987,36 @@ static void FindLinkBattleMaster(u8 numPlayers, u8 multiPlayerId)
     }
 }
 
+/**
+ * @brief Handles the start of a battle.
+ *
+ * This function is responsible for setting up the initial state of a battle,
+ * including running tasks, animating sprites, and handling link battles.
+ * It manages the communication between players in link battles and sets up
+ * the battle environment.
+ *
+ * @return void
+ */
 static void CB2_HandleStartBattle(void)
 {
     u8 playerMultiplayerId;
     u8 enemyMultiplayerId;
-    //BATTLE:Wissam: Start Battle
+
+    // Run tasks, animate sprites, and build OAM buffer
     RunTasks();
     AnimateSprites();
     BuildOamBuffer();
 
+    // Get the multiplayer ID of the player and enemy
     playerMultiplayerId = GetMultiplayerId();
     gBattleScripting.multiplayerId = playerMultiplayerId;
     enemyMultiplayerId = playerMultiplayerId ^ BIT_SIDE;
 
+    // Handle different states of the battle start process
     switch (gBattleCommunication[MULTIUSE_STATE])
     {
     case 0:
+        // Show backgrounds and fill around battle windows
         if (!IsDma3ManagerBusyWithBgCopy())
         {
             ShowBg(0);
@@ -981,13 +1030,14 @@ static void CB2_HandleStartBattle(void)
             LoadWirelessStatusIndicatorSpriteGfx();
         break;
     case 1:
+        // Handle link battles
         if (gBattleTypeFlags & BATTLE_TYPE_LINK)
         {
             if (gReceivedRemoteLinkPlayers)
             {
                 if (IsLinkTaskFinished())
                 {
-                    // 0x300
+                    // Set version signature and buffer party health
                     *(&gBattleStruct->multiBuffer.linkBattlerHeader.versionSignatureLo) = 0;
                     *(&gBattleStruct->multiBuffer.linkBattlerHeader.versionSignatureHi) = 3;
                     BufferPartyVsScreenHealth_AtStart();
@@ -999,6 +1049,7 @@ static void CB2_HandleStartBattle(void)
                         gLinkPlayers[1].id = 1;
                     }
 
+                    // Send block to other link players
                     SendBlock(BitmaskAllOtherLinkPlayers(), &gBattleStruct->multiBuffer.linkBattlerHeader, sizeof(gBattleStruct->multiBuffer.linkBattlerHeader));
                     gBattleCommunication[MULTIUSE_STATE] = 2;
                 }
@@ -1008,6 +1059,7 @@ static void CB2_HandleStartBattle(void)
         }
         else
         {
+            // Set battle type flags and berry data for non-link battles
             if (!(gBattleTypeFlags & BATTLE_TYPE_RECORDED))
                 gBattleTypeFlags |= BATTLE_TYPE_IS_MASTER;
             gBattleCommunication[MULTIUSE_STATE] = 15;
@@ -1015,6 +1067,7 @@ static void CB2_HandleStartBattle(void)
         }
         break;
     case 2:
+        // Receive block from other link players
         if ((GetBlockReceivedStatus() & 3) == 3)
         {
             u8 taskId;
@@ -1035,55 +1088,55 @@ static void CB2_HandleStartBattle(void)
         }
         break;
     case 3:
-        // Link battle, send/receive party Pokémon 2 at a time
+        // Send Pokémon 1-2 for link battle
         if (IsLinkTaskFinished())
         {
-            // Send Pokémon 1-2
             SendBlock(BitmaskAllOtherLinkPlayers(), gPlayerParty, sizeof(struct Pokemon) * 2);
             gBattleCommunication[MULTIUSE_STATE]++;
         }
         break;
     case 4:
+        // Receive Pokémon 1-2 for link battle
         if ((GetBlockReceivedStatus() & 3) == 3)
         {
-            // Recv Pokémon 1-2
             ResetBlockReceivedFlags();
             memcpy(gEnemyParty, gBlockRecvBuffer[enemyMultiplayerId], sizeof(struct Pokemon) * 2);
             gBattleCommunication[MULTIUSE_STATE]++;
         }
         break;
     case 7:
+        // Send Pokémon 3-4 for link battle
         if (IsLinkTaskFinished())
         {
-            // Send Pokémon 3-4
             SendBlock(BitmaskAllOtherLinkPlayers(), &gPlayerParty[2], sizeof(struct Pokemon) * 2);
             gBattleCommunication[MULTIUSE_STATE]++;
         }
         break;
     case 8:
+        // Receive Pokémon 3-4 for link battle
         if ((GetBlockReceivedStatus() & 3) == 3)
         {
-            // Recv Pokémon 3-4
             ResetBlockReceivedFlags();
             memcpy(&gEnemyParty[2], gBlockRecvBuffer[enemyMultiplayerId], sizeof(struct Pokemon) * 2);
             gBattleCommunication[MULTIUSE_STATE]++;
         }
         break;
     case 11:
+        // Send Pokémon 5-6 for link battle
         if (IsLinkTaskFinished())
         {
-            // Send Pokémon 5-6
             SendBlock(BitmaskAllOtherLinkPlayers(), &gPlayerParty[4], sizeof(struct Pokemon) * 2);
             gBattleCommunication[MULTIUSE_STATE]++;
         }
         break;
     case 12:
+        // Receive Pokémon 5-6 for link battle
         if ((GetBlockReceivedStatus() & 3) == 3)
         {
-            // Recv Pokémon 5-6
             ResetBlockReceivedFlags();
             memcpy(&gEnemyParty[4], gBlockRecvBuffer[enemyMultiplayerId], sizeof(struct Pokemon) * 2);
 
+            // Correct Shedinja language for enemy party
             TryCorrectShedinjaLanguage(&gEnemyParty[0]);
             TryCorrectShedinjaLanguage(&gEnemyParty[1]);
             TryCorrectShedinjaLanguage(&gEnemyParty[2]);
@@ -1094,15 +1147,14 @@ static void CB2_HandleStartBattle(void)
         }
         break;
     case 15:
+        // Initialize battle controllers and set trainer info
         InitBattleControllers();
         RecordedBattle_SetTrainerInfo();
         gBattleCommunication[SPRITES_INIT_STATE1] = 0;
         gBattleCommunication[SPRITES_INIT_STATE2] = 0;
         if (gBattleTypeFlags & BATTLE_TYPE_LINK)
         {
-            // Check if both players are using Emerald
-            // to determine if the recorded battle rng
-            // seed needs to be sent
+            // Check if both players are using Emerald version
             s32 i;
             for (i = 0; i < 2 && (gLinkPlayers[i].version & 0xFF) == VERSION_EMERALD; i++);
 
@@ -1117,7 +1169,7 @@ static void CB2_HandleStartBattle(void)
         }
         break;
     case 16:
-        // Both players are using Emerald, send rng seed for recorded battle
+        // Send RNG seed for recorded battle
         if (IsLinkTaskFinished())
         {
             SendBlock(BitmaskAllOtherLinkPlayers(), &gRecordedBattleRngSeed, sizeof(gRecordedBattleRngSeed));
@@ -1125,7 +1177,7 @@ static void CB2_HandleStartBattle(void)
         }
         break;
     case 17:
-        // Receive rng seed for recorded battle (only read it if partner is the link master)
+        // Receive RNG seed for recorded battle
         if ((GetBlockReceivedStatus() & 3) == 3)
         {
             ResetBlockReceivedFlags();
@@ -1135,7 +1187,7 @@ static void CB2_HandleStartBattle(void)
         }
         break;
     case 18:
-        // Finish, start battle
+        // Finish and start the battle
         if (BattleInitAllSprites(&gBattleCommunication[SPRITES_INIT_STATE1], &gBattleCommunication[SPRITES_INIT_STATE2]))
         {
             gPreBattleCallback1 = gMain.callback1;

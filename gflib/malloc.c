@@ -142,6 +142,8 @@ void FreeInternal(void *heapStart, void *pointer)
     }
 }
 
+//id:233835
+//@memory : general memory allocation function
 void *AllocZeroedInternal(void *heapStart, u32 size)
 {
     void *mem = AllocInternal(heapStart, size);

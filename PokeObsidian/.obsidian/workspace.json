@@ -13,42 +13,35 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "The Big PokeProject 🐲.md",
+                "file": "Pokeemerald/Battle/Methods.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "The Big PokeProject 🐲"
+              "title": "Methods"
             }
           },
           {
             "id": "beb015f4672fd4bc",
             "type": "leaf",
             "state": {
-              "type": "excalidraw",
-              "state": {
-                "file": "First drawing/Graph d'attaque.md"
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "Plugin no longer active"
+              "title": "New tab"
             }
           },
           {
             "id": "f3da6cb51e1ba1dd",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "The Big PokeProject 🐲.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "The Big PokeProject 🐲"
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Graph view"
             }
           }
-        ],
-        "currentTab": 2
+        ]
       }
     ],
     "direction": "vertical"
@@ -121,7 +114,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "The Big PokeProject 🐲.md",
+                "file": "Pokeemerald/Battle/Methods.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -131,7 +124,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for The Big PokeProject 🐲"
+              "title": "Backlinks for Methods"
             }
           },
           {
@@ -140,12 +133,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "The Big PokeProject 🐲.md",
+                "file": "Pokeemerald/Battle/Methods.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from The Big PokeProject 🐲"
+              "title": "Outgoing links from Methods"
             }
           },
           {
@@ -169,13 +162,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "The Big PokeProject 🐲.md",
+                "file": "Pokeemerald/Battle/Methods.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of The Big PokeProject 🐲"
+              "title": "Outline of Methods"
             }
           }
         ]
@@ -197,13 +190,18 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "237f716f9de2d76b",
+  "active": "77f8e68ecbb63afe",
   "lastOpenFiles": [
-    "Pokeemerald/Memory",
-    "Pokeemerald/Methods",
+    "Pokeemerald/Memory/Memory method.md",
+    "Pokeemerald/Battle/Methods.md",
+    "Pokeemerald/Methods/Untitled.md",
+    "TODO.md",
     "MD Command.md",
     "The Big PokeProject 🐲.md",
-    "TODO.md",
+    "Pokeemerald/Battle/Observations.md",
+    "Pokeemerald/Battle",
+    "Pokeemerald/Memory",
+    "Pokeemerald/Methods",
     "create a link.md",
     "Drawings/Brouillon.md",
     "Pokeemerald/Data Extraction",
@@ -213,9 +211,7 @@
     "AI/Export/Algorithms",
     "AI/Integrations",
     "AI/Export",
-    "AI/Training",
     "AI/Untitled.md",
-    "AI/Sources and papers",
     "Drawings/Graph d'attaque.md"
   ]
 }

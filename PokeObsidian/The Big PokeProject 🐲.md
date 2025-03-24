@@ -4,12 +4,12 @@ Aussi simple que, je travaille en IA embarquée et je trouve ça très marrant d
 
 Un système de Label est mis en place :
 
-@export
+@export 
 @integration
 @training
 @data
 @sim
-@battle
+@battle [[Methods]]
 @methods
 @memory
 
