@@ -455,8 +455,22 @@ static void DoBattlePikeWildBattle(void)
     TryUpdateGymLeaderRematchFromWild();
 }
 
+/**
+ * @battle change pokemon : before batlle : success ! 
+ * @brief Initiates a trainer battle.
+ *
+ * This function sets the species of the first Pokémon in the player's party to a new Pokémon ID
+ * just before the battle starts. It then creates a task to start the battle transition, increments
+ * the game statistics for total battles and trainer battles, and attempts to update the gym leader
+ * rematch status.
+ *
+ * @note The new Pokémon ID is hardcoded to 25 (Pikachu) in this example. Adjust the `newPokemonId`
+ *       variable to the desired Pokémon ID.
+ */
 static void DoTrainerBattle(void)
 {
+    u16 newPokemonId = 25; // Example: Change to Pikachu's ID
+    SetMonData(&gPlayerParty[0], MON_DATA_SPECIES, &newPokemonId);
     CreateBattleStartTask(GetTrainerBattleTransition(), 0);
     IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
     IncrementGameStat(GAME_STAT_TRAINER_BATTLES);
