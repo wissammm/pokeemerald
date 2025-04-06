@@ -457,7 +457,6 @@ static void DoBattlePikeWildBattle(void)
 
 static void DoTrainerBattle(void)
 {
-    CreateMon(&gEnemyParty[0], SPECIES_PIKACHU, 5, 31, FALSE, 0, 0, 0);
     CreateBattleStartTask(GetTrainerBattleTransition(), 0);
     IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
     IncrementGameStat(GAME_STAT_TRAINER_BATTLES);

@@ -6,6 +6,14 @@ static const struct TrainerMonNoItemDefaultMoves sParty_Sawyer1[] = {
     }
 };
 
+static const struct TrainerMonNoItemDefaultMoves sParty_Tester[] = {
+    {
+        .iv = 0,
+        .lvl = 10,
+        .species = SPECIES_PIKACHU,
+    },
+};
+
 static const struct TrainerMonNoItemDefaultMoves sParty_GruntAquaHideout1[] = {
     {
     .iv = 0,
