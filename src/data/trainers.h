@@ -1,15 +1,16 @@
 const struct Trainer gTrainers[] = {
-    [TRAINER_TESTER] = {
-        .trainerClass = TRAINER_CLASS_HIKER,
-        .encounterMusic_gender = TRAINER_ENCOUNTER_MUSIC_HIKER,
-        .trainerPic = TRAINER_PIC_HIKER,
-        .trainerName = _("SAWYER"),
+    [TRAINER_NEW_NPC] = {
+        .partyFlags = 0,
+        .trainerClass = TRAINER_CLASS_LASS,
+        .encounterMusic_gender = F_TRAINER_FEMALE | TRAINER_ENCOUNTER_MUSIC_INTENSE,
+        .trainerPic = TRAINER_PIC_LASS,
+        .trainerName = _("New NPC"),
         .items = {},
         .doubleBattle = FALSE,
-        .aiFlags = AI_SCRIPT_CHECK_BAD_MOVE | AI_SCRIPT_TRY_TO_FAINT | AI_SCRIPT_CHECK_VIABILITY,
-        .party = NO_ITEM_DEFAULT_MOVES(sParty_Tester),
+        .aiFlags = 0,
+        .partySize = ARRAY_COUNT(sParty_NewNPC),
+        .party = {.NoItemDefaultMoves = sParty_NewNPC},
     },
-
     [TRAINER_NONE] =
     {
         .partyFlags = 0,

@@ -56,3 +56,21 @@ InsideOfTruck_Text_BoxPrintedWithMonLogo:
 	.string "It's a POKéMON brand moving and\n"
 	.string " service.$"
 
+InsideOfTruck_EventScript_NPCBattle::
+    trainerbattle_single 1025, NewNPC_IntroText, NewNPC_VictoryText
+    end
+
+NewNPC_IntroText:
+    .string "toi la ! bagarre$"
+
+NewNPC_VictoryText:
+    .string "Je vais te faire toi\p je connais des gens.$"
+
+NewNPC_DefeatText:
+    .string "Better luck next time!$"
+
+NewNPC_AfterBattleText:
+    .string "Let's battle again sometime.$"
+
+
+
