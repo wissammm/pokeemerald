@@ -717,7 +717,7 @@ static void CB2_InitBattleInternal(void)
 }
 
 #define BUFFER_PARTY_VS_SCREEN_STATUS(party, flags, i)                      \
-    for ((i) = 0; (i) < PARTY_SIZE; (i)++)                                  \
+    for ((i) = 0; (i) < PARTY_SIZE; (i)++   )                                  \
     {                                                                       \
         u16 species = GetMonData(&(party)[(i)], MON_DATA_SPECIES_OR_EGG);   \
         u16 hp = GetMonData(&(party)[(i)], MON_DATA_HP);                    \

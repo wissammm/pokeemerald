@@ -66,11 +66,4 @@ NewNPC_IntroText:
 NewNPC_VictoryText:
     .string "Je vais te faire toi\p je connais des gens.$"
 
-NewNPC_DefeatText:
-    .string "Better luck next time!$"
-
-NewNPC_AfterBattleText:
-    .string "Let's battle again sometime.$"
-
-
 

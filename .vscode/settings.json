@@ -6,7 +6,9 @@
         "*.inc": "arm",
         "map": "c",
         "format": "c",
-        "map_groups.h": "c"
+        "map_groups.h": "c",
+        "cable_club.h": "c",
+        "battle_moves.h": "c"
     },
     "terminal.integrated.shell.linux": "/bin/bash"
 }

@@ -8,7 +8,7 @@
             "args": [
                 "DINFO=1",
                 "modern",
-                "-j$(nproc)"
+                "-j$(nproc)",
             ],
             "group": {
                 "kind": "build",
