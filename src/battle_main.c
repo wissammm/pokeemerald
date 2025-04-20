@@ -702,6 +702,13 @@ static void CB2_InitBattleInternal(void)
             0,                  // Personality value (unused since FALSE above)
             OT_ID_PLAYER_ID,   // Use player's ID as OT
             0);
+        CreateMon(&gPlayerParty[0], SPECIES_MACHOKE, 30, 
+                USE_RANDOM_IVS,     // Use random IVs
+                FALSE,              // Don't use fixed personality
+                0,                  // Personality value (unused since FALSE above)
+                OT_ID_PLAYER_ID,   // Use player's ID as OT
+                0);
+
         if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS)
             CreateNPCTrainerParty(&gEnemyParty[PARTY_SIZE / 2], gTrainerBattleOpponent_B, FALSE);
         SetWildMonHeldItem();

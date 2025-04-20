@@ -8,7 +8,11 @@
         "format": "c",
         "map_groups.h": "c",
         "cable_club.h": "c",
-        "battle_moves.h": "c"
+        "battle_moves.h": "c",
+        "strings.h": "c",
+        "abilities.h": "c",
+        "pokemon.h": "c",
+        "pokeblock.h": "c"
     },
     "terminal.integrated.shell.linux": "/bin/bash"
 }

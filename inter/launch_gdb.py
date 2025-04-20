@@ -1,76 +1,77 @@
-import pygdbmi 
 import time
+import subprocess
 from pygdbmi.gdbcontroller import GdbController
 from pygdbmi.constants import GdbTimeoutError
-import subprocess
-# Initialize GDB controller
-gdbmi = GdbController()
 
-class GDBMI:
-    def __init__(self):
-        self.gdbmi = GdbController()
+GDB_PATH = "/opt/devkitpro/devkitARM/bin/arm-none-eabi-gdb"
+ELF_PATH = "../pokeemerald_modern.elf"
+GDB_PORT = 2345
 
-    def write(self, command):
-        response = self.gdbmi.write(command)
-        return response
+def launch_mgba(rom_path, port):
+    print("Launching mGBA...")
+    return subprocess.Popen(
+        ['mgba-qt', '-g', f'-C', f'gdb.port={port}', rom_path],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
 
-    def exit(self):
-        self.gdbmi.exit()
-    
-    def getRegisters(self):
-        response = self.gdbmi.write('info registers')
-        return response
-    
-    def getVariable(self, variable_name):
-        # Use GDB's `print` command to inspect the variable
-        response = self.gdbmi.write(f'print {variable_name}')
-        return response
+def wait_for_breakpoint(gdbmi):
+    print("Waiting for breakpoint to be hit...")
+    break_hit = False
+    while not break_hit:
+        try:
+            responses = gdbmi.get_gdb_response(timeout_sec=1)
+            for resp in responses:
+                if resp.get('type') == 'notify' and resp.get('message') == 'stopped':
+                    break_hit = True
+                    print("Breakpoint hit!")
+                    break
+        except GdbTimeoutError:
+            pass
+        if not break_hit:
+            time.sleep(0.5)
 
-
-GDB_PATH = "/opt/devkitpro/devkitARM/bin/arm-none-eabi-gdb"  # Update if needed
-
-print("Launching mgba-qt...")
-mgba_proc = subprocess.Popen(
-    ['mgba-qt', '-g', '../pokeemerald_modern.elf'],
-    stdout=subprocess.PIPE,
-    stderr=subprocess.PIPE
-)
-
-time.sleep(2)
-
-# Use the correct GDB for ARM
-gdbmi = GdbController(command=[GDB_PATH, '--interpreter=mi2'])
-
-gdbmi.write('file ../pokeemerald_modern.elf')
-
-gdbmi.write('-target-select remote localhost:2345', timeout_sec=5)
-
-print("Setting breakpoints...")
-print(gdbmi.write('break BattleMainCB2', timeout_sec=5))
-print(gdbmi.write('break HandleAction_UseMove', timeout_sec=5))
-print(gdbmi.write('break *0x0807570c', timeout_sec=5))
-
-print(" Press Enter ")
-input()
-gdbmi.write('continue')
-
-print("Waiting for breakpoint to be hit...")
-break_hit = False
-while not break_hit:
-    try:
-        responses = gdbmi.get_gdb_response(timeout_sec=1)
-        for resp in responses:
-            if resp.get('type') == 'notify' and resp.get('message') == 'stopped':
-                break_hit = True
-                print("Breakpoint hit!")
+def get_gplayerparty_mon_data(gdbmi, index=0):
+    fields = [
+        'hp', 'maxHP', 'level', 'status', 'attack', 'defense', 'speed', 'spAttack', 'spDefense'
+    ]
+    data = {}
+    prefix = f"gPlayerParty[{index}]"
+    for field in fields:
+        cmd = f"p {prefix}.{field}"
+        response = gdbmi.write(cmd, timeout_sec=5)
+        for msg in response:
+            if msg.get('type') == 'console' and '$' in msg.get('payload', ''):
+                value = msg['payload'].split('=')[-1].strip()
+                data[field] = value
                 break
-    except GdbTimeoutError:
-        pass
-    if not break_hit:
-        time.sleep(0.5)
 
-print("Inspecting gPlayerParty[0] species (raw offset)...")
-response = gdbmi.write('p *(unsigned short *)((char *)&gPlayerParty[0] + 8)')
-print("gPlayerParty[0] species:", response)
+    return data
 
-gdbmi.exit()
+def main():
+    mgba_proc = launch_mgba(ELF_PATH, GDB_PORT)
+    print("Waiting for mGBA to start...")
+    time.sleep(2)  # Wait for mGBA to be ready
+
+    gdbmi = GdbController(command=[GDB_PATH, '--interpreter=mi2'])
+    print("Loading ELF...")
+    print(gdbmi.write(f'file {ELF_PATH}', timeout_sec=5))
+    print("Connecting to GDB server...")
+    print(gdbmi.write(f'-target-select remote localhost:{GDB_PORT}', timeout_sec=5))
+
+    print("Setting breakpoints...")
+    print(gdbmi.write('break BattleMainCB2', timeout_sec=5))
+    print(gdbmi.write('break HandleAction_UseMove', timeout_sec=5))
+    print(gdbmi.write('break *0x0807570c', timeout_sec=5))
+
+    input("Press Enter to continue execution...")
+    gdbmi.write('continue')
+
+    wait_for_breakpoint(gdbmi)
+
+    print("Inspecting gPlayerParty[0] data...")
+    mon_data = get_gplayerparty_mon_data(gdbmi, 0)
+    print("gPlayerParty[0]:", mon_data)
+
+if __name__ == "__main__":
+    main()
