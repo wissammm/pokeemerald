@@ -12,7 +12,8 @@
         "strings.h": "c",
         "abilities.h": "c",
         "pokemon.h": "c",
-        "pokeblock.h": "c"
+        "pokeblock.h": "c",
+        "trainers.h": "c"
     },
     "terminal.integrated.shell.linux": "/bin/bash"
 }

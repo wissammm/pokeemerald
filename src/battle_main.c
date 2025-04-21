@@ -60,6 +60,7 @@
 #include "constants/songs.h"
 #include "constants/trainers.h"
 #include "cable_club.h"
+#include "debug_mon_dump.h"
 
 extern const struct BgTemplate gBattleBgTemplates[];
 extern const struct WindowTemplate *const gBattleWindowTemplates[];
@@ -711,6 +712,7 @@ static void CB2_InitBattleInternal(void)
 
         if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS)
             CreateNPCTrainerParty(&gEnemyParty[PARTY_SIZE / 2], gTrainerBattleOpponent_B, FALSE);
+        struct DebugMonDump myMon = DumpPartyMonData(&gPlayerParty[0]);
         SetWildMonHeldItem();
     }
 
