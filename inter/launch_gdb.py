@@ -52,12 +52,21 @@ def get_gplayerparty_mon_data(gdbmi, index=0):
         cmd = f"p {prefix}.{field}"
         response = gdbmi.write(cmd, timeout_sec=5)
         for msg in response:
-            if msg.get('type') == 'console' and '$' in msg.get('payload', ''):
+            if msg.get('type')== 'console' and '$' in msg.get('payload', ''):
                 value = msg['payload'].split('=')[-1].strip()
                 data[field] = value
                 break
     
     return data
+
+def safe_parse_c_string_bytes(s):
+    s = s.strip('"').strip("'")
+    try:
+        bytestr = s.encode('latin1').decode('unicode_escape').encode('latin1')
+        return [b for b in bytestr]
+    except UnicodeEncodeError:
+        # Fallback: return empty list or zeros
+        return [0 for _ in s]
 
 def parse_c_string_bytes(s):
     # s is a C string like "\031\024(\n"
@@ -81,7 +90,7 @@ def get_gplayerparty_mon_dump(gdbmi, index=0):
             for arr_match in array_pattern.finditer(struct_str):
                 key = arr_match.group(1)
                 values = [int(x.strip()) for x in arr_match.group(2).split(',')]
-                result[key] = values
+                result[key] = safe_parse_c_string_bytes(value)
                 struct_str = struct_str.replace(arr_match.group(0), '')  # Remove parsed array
 
             string_pattern = re.compile(r'(\w+)\s*=\s*"([^"]*)"')
@@ -101,6 +110,40 @@ def get_gplayerparty_mon_dump(gdbmi, index=0):
             return result
     return None
 
+def get_debug_mon_dump(gdbmi, var_name="gBattleMonsDebug[0]"):
+    cmd = f"p {var_name}"
+    response = gdbmi.write(cmd, timeout_sec=5)
+    for msg in response:
+        if msg.get('type') == 'console' and '$' in msg.get('payload', ''):
+            payload = msg['payload']
+            print("Raw DebugMonDump output:", payload)
+            struct_str = payload.split('=', 1)[-1].strip().lstrip('{').rstrip('}\n')
+            result = {}
+
+            array_pattern = re.compile(r'(\w+)\s*=\s*\{([^\}]*)\}')
+            for arr_match in array_pattern.finditer(struct_str):
+                key = arr_match.group(1)
+                values = [int(x.strip()) for x in arr_match.group(2).split(',')]
+                result[key] = values
+                struct_str = struct_str.replace(arr_match.group(0), '')
+
+            string_pattern = re.compile(r'(\w+)\s*=\s*"([^"]*)"')
+            for str_match in string_pattern.finditer(struct_str):
+                key = str_match.group(1)
+                value = str_match.group(2)
+                result[key] = parse_c_string_bytes('"' + value + '"')
+                struct_str = struct_str.replace(str_match.group(0), '')
+
+            for part in struct_str.split(','):
+                if '=' in part:
+                    key, value = part.split('=', 1)
+                    try:
+                        result[key.strip()] = int(value.strip())
+                    except ValueError:
+                        result[key.strip()] = value.strip()
+            return result
+    return None
+    
 def main(make_project=False):
     mgba_make = make_mgba_gdb(MAKE_PATH) 
     mgba_proc = launch_mgba(ELF_PATH, GDB_PORT)
@@ -114,9 +157,9 @@ def main(make_project=False):
     print(gdbmi.write(f'-target-select remote localhost:{GDB_PORT}', timeout_sec=5))
 
     print("Setting breakpoints...")
-    print(gdbmi.write('break SetWildMonHeldItem', timeout_sec=5))
+    print(gdbmi.write('break BattleIntroDrawPartySummaryScreens', timeout_sec=5))
 
-    input("Press Enter to continue execution...")
+    time.sleep(1)
     gdbmi.write('continue')
 
     wait_for_breakpoint(gdbmi)
@@ -124,9 +167,9 @@ def main(make_project=False):
     print("Inspecting gPlayerParty[0] data...")
     mon_data = get_gplayerparty_mon_data(gdbmi, 0)
     print("gPlayerParty[0]:", mon_data)
-    mon_data = get_gplayerparty_mon_dump(gdbmi, 0)
-    print("gPlayerParty[0]:", mon_data)
-
+    mon_data = get_debug_mon_dump(gdbmi)
+    for key, value in mon_data.items():
+        print(f"  {key}: {value}")
 
 if __name__ == "__main__":
     make = False

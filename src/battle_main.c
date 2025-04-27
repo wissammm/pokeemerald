@@ -163,6 +163,7 @@ EWRAM_DATA u8 gBattlerByTurnOrder[MAX_BATTLERS_COUNT] = {0};
 EWRAM_DATA u8 gCurrentTurnActionNumber = 0;
 EWRAM_DATA u8 gCurrentActionFuncId = 0;
 EWRAM_DATA struct BattlePokemon gBattleMons[MAX_BATTLERS_COUNT] = {0};
+EWRAM_DATA struct DebugMonDump  gBattleMonsDebug[12] = {0};
 EWRAM_DATA u8 gBattlerSpriteIds[MAX_BATTLERS_COUNT] = {0};
 EWRAM_DATA u8 gCurrMovePos = 0;
 EWRAM_DATA u8 gChosenMovePos = 0;
@@ -703,16 +704,17 @@ static void CB2_InitBattleInternal(void)
             0,                  // Personality value (unused since FALSE above)
             OT_ID_PLAYER_ID,   // Use player's ID as OT
             0);
-        CreateMon(&gPlayerParty[0], SPECIES_MACHOKE, 30, 
+        CreateMon(&gPlayerParty[0], 12, 30, 
                 USE_RANDOM_IVS,     // Use random IVs
                 FALSE,              // Don't use fixed personality
                 0,                  // Personality value (unused since FALSE above)
                 OT_ID_PLAYER_ID,   // Use player's ID as OT
                 0);
 
+        
         if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS)
             CreateNPCTrainerParty(&gEnemyParty[PARTY_SIZE / 2], gTrainerBattleOpponent_B, FALSE);
-        struct DebugMonDump myMon = DumpPartyMonData(&gPlayerParty[0]);
+        
         SetWildMonHeldItem();
     }
 
@@ -3432,9 +3434,20 @@ static void BattleIntroDrawTrainersOrMonsSprites(void)
             gBattleMons[gActiveBattler].ability = GetAbilityBySpecies(gBattleMons[gActiveBattler].species, gBattleMons[gActiveBattler].abilityNum);
             hpOnSwitchout = &gBattleStruct->hpOnSwitchout[GetBattlerSide(gActiveBattler)];
             *hpOnSwitchout = gBattleMons[gActiveBattler].hp;
+            
             for (i = 0; i < NUM_BATTLE_STATS; i++)
                 gBattleMons[gActiveBattler].statStages[i] = DEFAULT_STAT_STAGE;
             gBattleMons[gActiveBattler].status2 = 0;
+            for (i = 0; i < PARTY_SIZE; i++)
+            {
+                gBattleMonsDebug[i] = DumpPartyMonData(&gPlayerParty[i]);
+            }
+            for (i = 0; i < PARTY_SIZE; i++)
+            {
+                gBattleMonsDebug[i+6] =  DumpPartyMonData(&gEnemyParty[i]);
+            }
+            gBattleMons[gActiveBattler].status2 &= ~(STATUS2_CONFUSION | STATUS2_FOCUS_ENERGY | STATUS2_SUBSTITUTE | STATUS2_ESCAPE_PREVENTION | STATUS2_CURSED);
+            gStatuses3[gActiveBattler] &= (STATUS3_LEECHSEED_BATTLER | STATUS3_LEECHSEED | STATUS3_ALWAYS_HITS | STATUS3_PERISH_SONG | STATUS3_ROOTED | STATUS3_MUDSPORT | STATUS3_WATERSPORT);
         }
 
         if (GetBattlerPosition(gActiveBattler) == B_POSITION_PLAYER_LEFT)

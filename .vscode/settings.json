@@ -13,7 +13,9 @@
         "abilities.h": "c",
         "pokemon.h": "c",
         "pokeblock.h": "c",
-        "trainers.h": "c"
+        "trainers.h": "c",
+        "types.h": "c",
+        "debug_mon_dump.h": "c"
     },
     "terminal.integrated.shell.linux": "/bin/bash"
 }
