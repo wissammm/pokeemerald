@@ -4127,14 +4127,60 @@ enum
     STATE_SELECTION_SCRIPT_MAY_RUN
 };
 
+
+// actions :
+// 0 move 1 
+// 1 move 2
+// 2 move 3
+// 3 move 4
+// 4 change 2
+// 5 change 3
+// 6 change 4
+// 7 change 5
+// 8 change 6
+
+
+u8 action=0;
+volatile u8 isActionWritten = FALSE;
+
+
 static void HandleTurnActionSelectionState(void)
 {
     s32 i;
 
     gBattleCommunication[ACTIONS_CONFIRMED_COUNT] = 0;
+    // here i can now at every turn know the current states of the battlers
+
+    
+
     for (gActiveBattler = 0; gActiveBattler < gBattlersCount; gActiveBattler++)
     {
+        // here to load current party inside the gBattleMonsDebug
+        for (i = 0; i < PARTY_SIZE; i++)
+        {
+            gBattleMonsDebug[i] = DumpPartyMonData(&gPlayerParty[i]);
+            // use a for but can be replaced by 1 or 2 bc our case is only for 1v1 
+            for (int b = 0; b < gBattlersCount; b++)
+            {
+                if (GetBattlerSide(b) == B_SIDE_PLAYER && gBattlerPartyIndexes[b] == i)
+                    gBattleMonsDebug[i].status2 = gBattleMons[b].status2;
+            }
+        }
+        for (i = 0; i < PARTY_SIZE; i++)
+        {
+            gBattleMonsDebug[i+6] = DumpPartyMonData(&gEnemyParty[i]);
+            for (int b = 0; b < gBattlersCount; b++)
+            {
+                if (GetBattlerSide(b) == B_SIDE_OPPONENT && gBattlerPartyIndexes[b] == i)
+                    gBattleMonsDebug[i+6].status2 = gBattleMons[b].status2;
+            }
+        }
+
+        // wait_for_action();
+
+        
         u8 position = GetBattlerPosition(gActiveBattler);
+
         switch (gBattleCommunication[gActiveBattler])
         {
         case STATE_TURN_START_RECORD: // Recorded battle related action on start of every turn.

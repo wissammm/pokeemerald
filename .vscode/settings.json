@@ -15,7 +15,11 @@
         "pokeblock.h": "c",
         "trainers.h": "c",
         "types.h": "c",
-        "debug_mon_dump.h": "c"
+        "debug_mon_dump.h": "c",
+        "random.h": "c",
+        "util.h": "c",
+        "battle_main.h": "c",
+        "global.h": "c"
     },
     "terminal.integrated.shell.linux": "/bin/bash"
 }
