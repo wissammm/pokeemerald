@@ -28,40 +28,74 @@ class GDBSession:
         self._wait_for_prompt()
     
     def _wait_for_prompt(self):
-        response = ''
+        response_lines = []
+
         while True:
             line = self.gdb.stdout.readline()
-            response += line
             if line == "":
                 raise RuntimeError("[ERROR] GDB stdout closed.")
-            print("[GDB OUTPUT]", line.strip())
-            if line.startswith(("^done", "^connected", "^error")) or line.strip() == "(gdb)":
-                break
-        return response
-    
-    def wait_for_port(port, host="localhost", timeout=10):
-        start_time = time.time()
-        while time.time() - start_time < timeout:
-            try:
-                with socket.create_connection((host, port), timeout=1):
-                    print(f"GDB port {port} is now open.")
-                    return True
-            except OSError:
-                time.sleep(0.5)
-        raise TimeoutError(f"Timeout: GDB server not available on port {port}")
-       
+            line = line.rstrip("\r\n")
+            response_lines.append(line)
+            print("[GDB OUTPUT]", line)
 
+            # Always collect everything, but only stop when prompt appears
+            if line.strip() == "(gdb)":
+                print("[GDB] Prompt received")
+                break
+
+        return '\n'.join(response_lines)
+       
+    def parse_mi_output(self, raw_output):
+        results = []
+        for line in raw_output.strip().splitlines():
+            if line.startswith('*stopped'):
+                match = re.search(r'reason="([^"]+)"', line)
+                reason = match.group(1) if match else None
+                func_match = re.search(r'func="([^"]+)"', line)
+                func = func_match.group(1) if func_match else None
+                results.append({
+                    "reason": reason,
+                    "frame": {"func": func} if func else {}
+                })
+        return results
+    
     def send_mi_cmd(self, cmd, wait_for="^done"):
         self.gdb.stdin.write(cmd + '\n')
         self.gdb.stdin.flush()
-        self._wait_for_prompt()
+        return self._wait_for_prompt()
 
+    def wait_for_async_event(self, event_type="breakpoint-hit", timeout=100):
+        start = time.time()
+        buffer = ""
+        print(f"[DEBUG] Waiting for async event: {event_type} (timeout = {timeout}s)")
+        
+        while time.time() - start < timeout:
+            line = self.gdb.stdout.readline()
+            if not line:
+                print("[DEBUG] GDB stdout closed or returned nothing.")
+                break
+
+            line = line.strip()
+            buffer += line + "\n"
+            print("[GDB ASYNC RAW]", repr(line))  # Show raw line including escapes
+
+            if line.startswith("*stopped"):
+                print("[DEBUG] Found *stopped message")
+                if event_type in line:
+                    print(f"[DEBUG] Matched event type '{event_type}' in line")
+                    return True
+                else:
+                    print(f"[DEBUG] *stopped event found but no match for '{event_type}'")
+        
+        print(f"[DEBUG] Timeout reached or no matching event found. Collected buffer:\n{buffer}")
+        return False
+    
     def close(self):
         self.send_mi_cmd("quit")
         self.gdb.terminate()
 
 def make_mgba_gdb(make_path):
-    print("Making gba project...")
+    # print("Making gba project...")
     return subprocess.run(
         ['make', 'modern', 'DINFO=1', '-j6'],
         cwd=make_path,
@@ -71,7 +105,7 @@ def make_mgba_gdb(make_path):
     )
 
 def launch_mgba(rom_path, port):
-    print("Launching mGBA...")
+    # print("Launching mGBA...")
     
     return subprocess.Popen(
         ['mgba-qt', '-g', '-C', f'gdb.port={port}', rom_path],
@@ -80,16 +114,25 @@ def launch_mgba(rom_path, port):
         text=True
     )
     
-# def wait_for_mgba_ready(proc, timeout=10):
-#     start = time.time()
-#     while time.time() - start < timeout:
-#         line = proc.stderr.readline()
-#         if not line:
-#             break
-#         print("[mGBA]", line.strip())
-#         if "GDB stub listening on" in line:
-#             return True
-#     raise TimeoutError("mGBA did not start the GDB stub.")
+def setup_gdb_session():
+    print("[GDB] Starting session...")
+    gdb = GDBSession(GDB_PATH, ELF_PATH, GDB_PORT)
+
+    # GDB connection settings
+    gdb.send_mi_cmd("set remote X-packet off")
+    gdb.send_mi_cmd("set remote hardware-watchpoint-limit 0")
+    gdb.send_mi_cmd("set remote Z-packet off")
+    gdb.send_mi_cmd("set remote noack-packet off")
+
+    # Connect to target
+    start = time.time()
+    gdb.send_mi_cmd(f"-target-select remote localhost:{GDB_PORT}")
+    print(f"[DEBUG] target-select took {time.time() - start:.2f}s")
+
+    # Load symbols
+    gdb.send_mi_cmd(f"-file-exec-and-symbols {ELF_PATH}")
+    print("[GDB] Executable loaded.")
+    return gdb
 
 def wait_for_mgba_ready(port, max_retries=20, initial_delay=0.5, max_delay=5):
     """
@@ -123,50 +166,36 @@ def main(make_project=False):
             return
 
     print("[main] Launching mGBA...")
-    mgba_proc = launch_mgba(ELF_PATH, GDB_PORT)
+    launch_mgba(ELF_PATH, GDB_PORT)
     print("[main] Waiting for mGBA to be ready...")
     wait_for_mgba_ready(GDB_PORT)
     print("[main] GDB stub is ready")
 
     print("[main] Starting GDB session...")
-    gdb = GDBSession(GDB_PATH, ELF_PATH, GDB_PORT)
-
-    # Make sure we connect to the target before anything else
-    print("[main] Connecting to remote GDB target...")
-    gdb.send_mi_cmd("set remote X-packet off")
-    gdb.send_mi_cmd("set remote hardware-watchpoint-limit 0")
-    gdb.send_mi_cmd("set remote Z-packet off")
-    gdb.send_mi_cmd("set remote noack-packet off")
-    start = time.time()
+    gdb = setup_gdb_session()
     
-    gdb.send_mi_cmd(f"-target-select remote localhost:{GDB_PORT}")
-    print(f"[DEBUG] target-select took {time.time() - start:.2f} seconds")
-    # Load ELF after connecting to the target
-    print("[main] Executing -file-exec-and-symbols to load ELF...")
-    gdb.send_mi_cmd(f"-file-exec-and-symbols {ELF_PATH}")
-    print("[main] Executable loaded")
 
-    # Disable packets if needed
-
-    print("[main] Remote GDB configurations set")
-
-    # Send an interrupt to pause execution
-    print("[main] Sending interrupt to pause execution...")
-    gdb.send_mi_cmd("-exec-interrupt")
-    time.sleep(0.5)  # Wait a little for the game to pause
-    print("[main] GDB paused")
 
     # Set breakpoints and continue
     print("[main] Setting breakpoint at HandleTurnActionSelectionState...")
-    gdb.send_mi_cmd("break-insert HandleTurnActionSelectionState")
+    print(gdb.send_mi_cmd("-break-insert GetBattlerPosition"))
     
-    
-    # Evaluate expression
-    print("[main] Evaluating expression 'isActionWritten'...")
-    gdb.send_mi_cmd("-data-evaluate-expression isActionWritten")
+    print("[main] After BP set...")
+    status = gdb.send_mi_cmd("-thread-info")
+    if "state=\"stopped\"" in status:
+        print("[DEBUG] Target is stopped, continuing execution")
+        gdb.send_mi_cmd("-exec-continue")
+    else:
+        print("[DEBUG] Target already running")
+    # Wait for the breakpoint to be hit
+    break_hit = gdb.wait_for_async_event(event_type="breakpoint-hit")
 
-    print("[main] Breakpoint set and execution continued")
-    gdb.send_mi_cmd("-exec-continue")
+    if break_hit:
+        # Evaluate the expression after hitting the breakpoint
+        response = gdb.send_mi_cmd("-data-evaluate-expression isActionWritten")
+        print("[main] isActionWritten =", response)
+    else:
+        print("[main] Breakpoint was not hit.")
 
 
     # print("Waiting for breakpoint...")
