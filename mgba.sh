@@ -5,4 +5,4 @@
 	echo "started"
 )&
 
-/usr/bin/mgba $1 -g
+mgba-qt $1 -g
