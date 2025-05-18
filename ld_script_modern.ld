@@ -12,6 +12,11 @@ MEMORY
 
 SECTIONS {
 
+    .dump_data 0x0203D000 : ALIGN(4)
+    {
+        KEEP(*(.dump_data));
+    } > EWRAM
+    
     ewram 0x2000000 (NOLOAD) :
     ALIGN(4)
     {

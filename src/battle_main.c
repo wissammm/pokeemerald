@@ -137,10 +137,7 @@ EWRAM_DATA u8 gDisplayedStringBattle[300] = {0};
 EWRAM_DATA u8 gBattleTextBuff1[TEXT_BUFF_ARRAY_COUNT] = {0};
 EWRAM_DATA u8 gBattleTextBuff2[TEXT_BUFF_ARRAY_COUNT] = {0};
 EWRAM_DATA u8 gBattleTextBuff3[TEXT_BUFF_ARRAY_COUNT] = {0};
-// The below array is never intentionally used. However, Juan's
-// defeat text (SootopolisCity_Gym_1F_Text_JuanDefeat) is too long
-// for gDisplayedStringBattle and overflows into this array. If it
-// is removed (and none of the buffers above are increased in size)
+DUMP_DATA  u16 testBuffer = 0;
 // it will instead overflow into useful data.
 EWRAM_DATA static u32 sFlickerArray[25] = {0};
 EWRAM_DATA u32 gBattleTypeFlags = 0;
@@ -4100,6 +4097,7 @@ enum
 
 static void HandleTurnActionSelectionState(void)
 {
+    testBuffer = 1;
     s32 i;
 
     gBattleCommunication[ACTIONS_CONFIRMED_COUNT] = 0;
