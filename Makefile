@@ -298,6 +298,10 @@ else
 $(C_BUILDDIR)/librfu_intr.o: CFLAGS := -mthumb-interwork -O2 -mabi=apcs-gnu -mtune=arm7tdmi -march=armv4t -fno-toplevel-reorder -Wno-pointer-to-int-cast
 endif
 
+ifeq ($(OBSERVED_DATA),1)
+CFLAGS += -DOBSERVED_DATA
+endif
+
 ifeq ($(DINFO),1)
 override CFLAGS += -g
 endif

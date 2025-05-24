@@ -61,6 +61,11 @@
 #include "constants/trainers.h"
 #include "cable_club.h"
 
+#ifdef OBSERVED_DATA
+    #include "data_mon_dump.h"
+#endif
+
+
 extern const struct BgTemplate gBattleBgTemplates[];
 extern const struct WindowTemplate *const gBattleWindowTemplates[];
 
@@ -137,7 +142,6 @@ EWRAM_DATA u8 gDisplayedStringBattle[300] = {0};
 EWRAM_DATA u8 gBattleTextBuff1[TEXT_BUFF_ARRAY_COUNT] = {0};
 EWRAM_DATA u8 gBattleTextBuff2[TEXT_BUFF_ARRAY_COUNT] = {0};
 EWRAM_DATA u8 gBattleTextBuff3[TEXT_BUFF_ARRAY_COUNT] = {0};
-DUMP_DATA  u16 testBuffer = 0;
 // it will instead overflow into useful data.
 EWRAM_DATA static u32 sFlickerArray[25] = {0};
 EWRAM_DATA u32 gBattleTypeFlags = 0;
@@ -233,6 +237,11 @@ EWRAM_DATA struct BattleHealthboxInfo *gBattleControllerOpponentFlankHealthboxDa
 EWRAM_DATA u16 gBattleMovePower = 0;
 EWRAM_DATA u16 gMoveToLearn = 0;
 EWRAM_DATA u8 gBattleMonForms[MAX_BATTLERS_COUNT] = {0};
+
+#ifdef OBSERVED_DATA
+    DUMP_DATA  u16 testBuffer = 0;
+    DUMP_DATA struct DebugMonDump  gBattleMonsDebug[12] = {0};
+#endif 
 
 void (*gPreBattleCallback1)(void);
 void (*gBattleMainFunc)(void);
@@ -4097,9 +4106,31 @@ enum
 
 static void HandleTurnActionSelectionState(void)
 {
-    testBuffer = 1;
-    s32 i;
+    #ifdef OBSERVED_DATA
+        for (i = 0; i < PARTY_SIZE; i++)
+        {
+            gBattleMonsData[i] = DumpPartyMonData(&gPlayerParty[i]);
+            // use a for but can be replaced by 1 or 2 bc our case is only for 1v1 
+            for (int b = 0; b < gBattlersCount; b++)
+            {
+                if (GetBattlerSide(b) == B_SIDE_PLAYER && gBattlerPartyIndexes[b] == i)
+                    gBattleMonsData[i].status2 = gBattleMons[b].status2;
+            }
+        }
+        for (i = 0; i < PARTY_SIZE; i++)
+        {
+            gBattleMonsData[i+6] = DumpPartyMonData(&gEnemyParty[i]);
+            for (int b = 0; b < gBattlersCount; b++)
+            {
+                if (GetBattlerSide(b) == B_SIDE_OPPONENT && gBattlerPartyIndexes[b] == i)
+                    gBattleMonsData[i+6].status2 = gBattleMons[b].status2;
+            }
+        }
 
+        testBuffer = 1;
+        
+    #endif
+    s32 i;
     gBattleCommunication[ACTIONS_CONFIRMED_COUNT] = 0;
     for (gActiveBattler = 0; gActiveBattler < gBattlersCount; gActiveBattler++)
     {
