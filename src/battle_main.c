@@ -239,9 +239,16 @@ EWRAM_DATA u16 gMoveToLearn = 0;
 EWRAM_DATA u8 gBattleMonForms[MAX_BATTLERS_COUNT] = {0};
 
 #ifdef OBSERVED_DATA
-    DUMP_DATA  u16 testBuffer = 0;
-    DUMP_DATA struct DebugMonDump  gBattleMonsDebug[12] = {0};
-#endif 
+    DUMP_DATA u16 testBuffer = 0;
+    DUMP_DATA struct DataMonDump  gBattleMonsData[12] = {0};
+#endif
+
+#ifdef OBSERVED_DATA
+#warning "OBSERVED_DATA is enabled"
+#else
+#warning "OBSERVED_DATA is NOT enabled"
+#endif
+
 
 void (*gPreBattleCallback1)(void);
 void (*gBattleMainFunc)(void);
@@ -4107,6 +4114,7 @@ enum
 static void HandleTurnActionSelectionState(void)
 {
     #ifdef OBSERVED_DATA
+        s32 i;
         for (i = 0; i < PARTY_SIZE; i++)
         {
             gBattleMonsData[i] = DumpPartyMonData(&gPlayerParty[i]);
@@ -4126,11 +4134,12 @@ static void HandleTurnActionSelectionState(void)
                     gBattleMonsData[i+6].status2 = gBattleMons[b].status2;
             }
         }
-
         testBuffer = 1;
+
         
     #endif
-    s32 i;
+
+   
     gBattleCommunication[ACTIONS_CONFIRMED_COUNT] = 0;
     for (gActiveBattler = 0; gActiveBattler < gBattlersCount; gActiveBattler++)
     {

@@ -105,9 +105,16 @@ ROM := $(ROM_NAME)
 OBJ_DIR := $(OBJ_DIR_NAME)
 LIBPATH := -L ../../tools/agbcc/lib
 LIB := $(LIBPATH) -lgcc -lc -L../../libagbsyscall -lagbsyscall
-else
+else # Modern build
+
 CC1              = $(shell $(PATH_MODERNCC) --print-prog-name=cc1) -quiet
-override CFLAGS += -mthumb -mthumb-interwork -O2 -mabi=apcs-gnu -mtune=arm7tdmi -march=armv4t -fno-toplevel-reorder -Wno-pointer-to-int-cast
+override CFLAGS := -mthumb -mthumb-interwork -O2 -mabi=apcs-gnu -mtune=arm7tdmi -march=armv4t -fno-toplevel-reorder -Wno-pointer-to-int-cast
+
+ifeq ($(DOBSERVED_DATA),1)
+override CFLAGS += -DOBSERVED_DATA
+endif
+
+
 ROM := $(MODERN_ROM_NAME)
 OBJ_DIR := $(MODERN_OBJ_DIR_NAME)
 LIBPATH := -L "$(dir $(shell $(PATH_MODERNCC) -mthumb -print-file-name=libgcc.a))" -L "$(dir $(shell $(PATH_MODERNCC) -mthumb -print-file-name=libnosys.a))" -L "$(dir $(shell $(PATH_MODERNCC) -mthumb -print-file-name=libc.a))"
@@ -280,6 +287,7 @@ sound/%.bin: sound/%.aif ; $(AIF) $< $@
 
 
 ifeq ($(MODERN),0)
+
 $(C_BUILDDIR)/libc.o: CC1 := tools/agbcc/bin/old_agbcc$(EXE)
 $(C_BUILDDIR)/libc.o: CFLAGS := -O2
 
@@ -298,9 +306,6 @@ else
 $(C_BUILDDIR)/librfu_intr.o: CFLAGS := -mthumb-interwork -O2 -mabi=apcs-gnu -mtune=arm7tdmi -march=armv4t -fno-toplevel-reorder -Wno-pointer-to-int-cast
 endif
 
-ifeq ($(OBSERVED_DATA),1)
-CFLAGS += -DOBSERVED_DATA
-endif
 
 ifeq ($(DINFO),1)
 override CFLAGS += -g
@@ -326,10 +331,10 @@ else
 define C_DEP
 $1: $2 $$(shell $(SCANINC) -I include -I tools/agbcc/include -I gflib $2)
 ifeq (,$$(KEEP_TEMPS))
-	@echo "$$(CC1) <flags> -o $$@ $$<"
-	@$$(CPP) $$(CPPFLAGS) $$< | $$(PREPROC) $$< charmap.txt -i | $$(CC1) $$(CFLAGS) -o - - | cat - <(echo -e ".text\n\t.align\t2, 0") | $$(AS) $$(ASFLAGS) -o $$@ -
+	@echo "Compiling with OBSERVED_DATA flag"
+	@$$(CPP) $$(CPPFLAGS) $$(if $$(DOBSERVED_DATA),-DOBSERVED_DATA,) $$< | $$(PREPROC) $$< charmap.txt -i | $$(CC1) $$(CFLAGS) -o - - | cat - <(echo -e ".text\n\t.align\t2, 0") | $$(AS) $$(ASFLAGS) -o $$@ -
 else
-	@$$(CPP) $$(CPPFLAGS) $$< -o $$(C_BUILDDIR)/$3.i
+	@$$(CPP) $$(CPPFLAGS) $$(if $$(DOBSERVED_DATA),-DOBSERVED_DATA,) $$< -o $$(C_BUILDDIR)/$3.i
 	@$$(PREPROC) $$(C_BUILDDIR)/$3.i charmap.txt | $$(CC1) $$(CFLAGS) -o $$(C_BUILDDIR)/$3.s
 	@echo -e ".text\n\t.align\t2, 0\n" >> $$(C_BUILDDIR)/$3.s
 	$$(AS) $$(ASFLAGS) -o $$@ $$(C_BUILDDIR)/$3.s
