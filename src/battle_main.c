@@ -239,14 +239,17 @@ EWRAM_DATA u16 gMoveToLearn = 0;
 EWRAM_DATA u8 gBattleMonForms[MAX_BATTLERS_COUNT] = {0};
 
 #ifdef OBSERVED_DATA
-    DUMP_DATA u16 testBuffer = 0;
-    DUMP_DATA struct DataMonDump  gBattleMonsData[12] = {0};
-#endif
-
-#ifdef OBSERVED_DATA
 #warning "OBSERVED_DATA is enabled"
 #else
 #warning "OBSERVED_DATA is NOT enabled"
+#endif
+
+
+#ifdef OBSERVED_DATA
+    #define MON_DATA_U32_SIZE 36 
+    DUMP_DATA u16 testBuffer = 0;
+    DUMP_DATA u32 monDataPlayer[MON_DATA_U32_SIZE*PARTY_SIZE];
+    DUMP_DATA u32 monDataEnemy[MON_DATA_U32_SIZE*PARTY_SIZE];
 #endif
 
 
@@ -4113,32 +4116,36 @@ enum
 
 static void HandleTurnActionSelectionState(void)
 {
+    s32 i;
+
     #ifdef OBSERVED_DATA
-        s32 i;
         for (i = 0; i < PARTY_SIZE; i++)
         {
-            gBattleMonsData[i] = DumpPartyMonData(&gPlayerParty[i]);
+            DumpPartyMonData(&gPlayerParty[i], monDataPlayer + i * MON_DATA_U32_SIZE);
             // use a for but can be replaced by 1 or 2 bc our case is only for 1v1 
             for (int b = 0; b < gBattlersCount; b++)
             {
                 if (GetBattlerSide(b) == B_SIDE_PLAYER && gBattlerPartyIndexes[b] == i)
-                    gBattleMonsData[i].status2 = gBattleMons[b].status2;
+                    monDataPlayer[i * MON_DATA_U32_SIZE + 30] = gBattleMons[b].status2;
+                    monDataPlayer[i * MON_DATA_U32_SIZE] = TRUE;
+
             }
         }
         for (i = 0; i < PARTY_SIZE; i++)
         {
-            gBattleMonsData[i+6] = DumpPartyMonData(&gEnemyParty[i]);
+            DumpPartyMonData(&gEnemyParty[i], monDataEnemy + i * MON_DATA_U32_SIZE);
             for (int b = 0; b < gBattlersCount; b++)
             {
                 if (GetBattlerSide(b) == B_SIDE_OPPONENT && gBattlerPartyIndexes[b] == i)
-                    gBattleMonsData[i+6].status2 = gBattleMons[b].status2;
+                    monDataEnemy[i * MON_DATA_U32_SIZE + 30] = gBattleMons[b].status2;
+                    monDataEnemy[i * MON_DATA_U32_SIZE] = TRUE;
             }
         }
         testBuffer = 1;
 
         
     #endif
-
+    
    
     gBattleCommunication[ACTIONS_CONFIRMED_COUNT] = 0;
     for (gActiveBattler = 0; gActiveBattler < gBattlersCount; gActiveBattler++)
