@@ -4181,7 +4181,7 @@ static void HandleTurnActionSelectionState(void)
         {
 
             
-            u8 actionDone = 1;
+            u8 actionDone = 4;
             // u8 action = gBattleBufferB[gActiveBattler][1];
             // gChosenActionByBattler[gActiveBattler] = action;
             if (actionDone < 4){
@@ -4209,8 +4209,7 @@ static void HandleTurnActionSelectionState(void)
                     gChosenMoveByBattler[gActiveBattler] = gBattleMons[gActiveBattler].moves[actionDone];
                     // Optionally set the target (for single battles, usually 0 or 1)
                     *(gBattleStruct->moveTarget + gActiveBattler) = 0;
-                    // Advance the state
-                    gBattleCommunication[gActiveBattler] = STATE_WAIT_ACTION_CONFIRMED_STANDBY;
+                    // gBattleCommunication[gActiveBattler] = STATE_WAIT_ACTION_CONFIRMED_STANDBY;
                     continue;
 
                 }
@@ -4235,15 +4234,12 @@ static void HandleTurnActionSelectionState(void)
                 }
                 else
                 {
-                    if (gActiveBattler == 2 && gChosenActionByBattler[0] == B_ACTION_SWITCH)
-                        BtlController_EmitChoosePokemon(BUFFER_A, PARTY_ACTION_CHOOSE_MON, *(gBattleStruct->monToSwitchIntoId + 0), ABILITY_NONE, gBattleStruct->battlerPartyOrders[gActiveBattler]);
-                    else if (gActiveBattler == 3 && gChosenActionByBattler[1] == B_ACTION_SWITCH)
-                        BtlController_EmitChoosePokemon(BUFFER_A, PARTY_ACTION_CHOOSE_MON, *(gBattleStruct->monToSwitchIntoId + 1), ABILITY_NONE, gBattleStruct->battlerPartyOrders[gActiveBattler]);
-                    else
-                        BtlController_EmitChoosePokemon(BUFFER_A, PARTY_ACTION_CHOOSE_MON, PARTY_SIZE, ABILITY_NONE, gBattleStruct->battlerPartyOrders[gActiveBattler]);
+                     gChosenActionByBattler[gActiveBattler] = B_ACTION_SWITCH;
+                    *(gBattleStruct->monToSwitchIntoId + gActiveBattler) = actionDone - 4;
+                    *(gBattleStruct->battlerPartyIndexes + gActiveBattler) = gBattlerPartyIndexes[gActiveBattler];
+                    gBattleCommunication[gActiveBattler] = STATE_WAIT_ACTION_CONFIRMED_STANDBY;
+                    continue;
                 }
-                MarkBattlerForControllerExec(gActiveBattler);
-                continue;
             }
             
         }
