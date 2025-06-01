@@ -246,10 +246,17 @@ EWRAM_DATA u8 gBattleMonForms[MAX_BATTLERS_COUNT] = {0};
 
 
 #ifdef OBSERVED_DATA
-    #define MON_DATA_U32_SIZE 36 
+    // Tested values
     DUMP_DATA u16 testBuffer = 0;
+    
+    // Data to retrives
+    #define MON_DATA_U32_SIZE 36
     DUMP_DATA u32 monDataPlayer[MON_DATA_U32_SIZE*PARTY_SIZE];
     DUMP_DATA u32 monDataEnemy[MON_DATA_U32_SIZE*PARTY_SIZE];
+    
+    // Wait Value
+    DUMP_DATA u16 waitHandleTurn = 0;
+    DUMP_DATA u16 expectedWaitHandleTurn = 1;
 #endif
 
 
@@ -711,6 +718,30 @@ static void CB2_InitBattleInternal(void)
     if (!(gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED)))
     {
         CreateNPCTrainerParty(&gEnemyParty[0], gTrainerBattleOpponent_A, TRUE);
+        CreateMon(&gEnemyParty[0], SPECIES_MACHOKE, 12, 
+            USE_RANDOM_IVS,     // Use random IVs
+            FALSE,              // Don't use fixed personality
+            0,                  // Personality value (unused since FALSE above)
+            OT_ID_PLAYER_ID,   // Use player's ID as OT
+            0);
+        CreateMon(&gEnemyParty[1], 301, 12, 
+            USE_RANDOM_IVS,     // Use random IVs
+            FALSE,              // Don't use fixed personality
+            0,                  // Personality value (unused since FALSE above)
+            OT_ID_PLAYER_ID,   // Use player's ID as OT
+            0);
+        CreateMon(&gPlayerParty[0], 20, 10, 
+            USE_RANDOM_IVS,     // Use random IVs
+            FALSE,              // Don't use fixed personality
+            0,                  // Personality value (unused since FALSE above)
+            OT_ID_PLAYER_ID,   // Use player's ID as OT
+            0);
+        CreateMon(&gPlayerParty[1], 100, 10, 
+            USE_RANDOM_IVS,     // Use random IVs
+            FALSE,              // Don't use fixed personality
+            0,                  // Personality value (unused since FALSE above)
+            OT_ID_PLAYER_ID,   // Use player's ID as OT
+            0);
         if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS)
             CreateNPCTrainerParty(&gEnemyParty[PARTY_SIZE / 2], gTrainerBattleOpponent_B, FALSE);
         SetWildMonHeldItem();
@@ -4114,6 +4145,8 @@ enum
     STATE_SELECTION_SCRIPT_MAY_RUN
 };
 
+
+
 static void HandleTurnActionSelectionState(void)
 {
     s32 i;
@@ -4142,12 +4175,88 @@ static void HandleTurnActionSelectionState(void)
             }
         }
         testBuffer = 1;
+        // WaitValueEqual(waitHandleTurn,expectedWaitHandleTurn);
+        
+        for (gActiveBattler = 0; gActiveBattler < gBattlersCount; gActiveBattler++)
+        {
+
+            
+            u8 actionDone = 1;
+            // u8 action = gBattleBufferB[gActiveBattler][1];
+            // gChosenActionByBattler[gActiveBattler] = action;
+            if (actionDone < 4){
+                if (AreAllMovesUnusable())
+                {
+                    gBattleCommunication[gActiveBattler] = STATE_SELECTION_SCRIPT;
+                    *(gBattleStruct->selectionScriptFinished + gActiveBattler) = FALSE;
+                    *(gBattleStruct->stateIdAfterSelScript + gActiveBattler) = STATE_WAIT_ACTION_CONFIRMED_STANDBY;
+                    *(gBattleStruct->moveTarget + gActiveBattler) = gBattleBufferB[gActiveBattler][3];
+                    continue;
+                }
+                else if (gDisableStructs[gActiveBattler].encoredMove != 0)
+                {
+                    gChosenMoveByBattler[gActiveBattler] = gDisableStructs[gActiveBattler].encoredMove;
+                    *(gBattleStruct->chosenMovePositions + gActiveBattler) = gDisableStructs[gActiveBattler].encoredMovePos;
+                    gBattleCommunication[gActiveBattler] = STATE_WAIT_ACTION_CONFIRMED_STANDBY;
+                    continue;
+                }
+                else
+                {
+                    gChosenActionByBattler[gActiveBattler] = B_ACTION_USE_MOVE;
+                    // Set the chosen move position
+                    *(gBattleStruct->chosenMovePositions + gActiveBattler) = actionDone;
+                    // Set the actual move (move ID)
+                    gChosenMoveByBattler[gActiveBattler] = gBattleMons[gActiveBattler].moves[actionDone];
+                    // Optionally set the target (for single battles, usually 0 or 1)
+                    *(gBattleStruct->moveTarget + gActiveBattler) = 0;
+                    // Advance the state
+                    gBattleCommunication[gActiveBattler] = STATE_WAIT_ACTION_CONFIRMED_STANDBY;
+                    continue;
+
+                }
+                break;
+            }
+            else{
+                *(gBattleStruct->battlerPartyIndexes + gActiveBattler) = gBattlerPartyIndexes[gActiveBattler];
+                if (gBattleMons[gActiveBattler].status2 & (STATUS2_WRAPPED | STATUS2_ESCAPE_PREVENTION)
+                    || gBattleTypeFlags & BATTLE_TYPE_ARENA
+                    || gStatuses3[gActiveBattler] & STATUS3_ROOTED)
+                {
+                    BtlController_EmitChoosePokemon(BUFFER_A, PARTY_ACTION_CANT_SWITCH, PARTY_SIZE, ABILITY_NONE, gBattleStruct->battlerPartyOrders[gActiveBattler]);
+                }
+                else if ((i = ABILITY_ON_OPPOSING_FIELD(gActiveBattler, ABILITY_SHADOW_TAG))
+                        || ((i = ABILITY_ON_OPPOSING_FIELD(gActiveBattler, ABILITY_ARENA_TRAP))
+                            && !IS_BATTLER_OF_TYPE(gActiveBattler, TYPE_FLYING)
+                            && gBattleMons[gActiveBattler].ability != ABILITY_LEVITATE)
+                        || ((i = AbilityBattleEffects(ABILITYEFFECT_CHECK_FIELD_EXCEPT_BATTLER, gActiveBattler, ABILITY_MAGNET_PULL, 0, 0))
+                            && IS_BATTLER_OF_TYPE(gActiveBattler, TYPE_STEEL)))
+                {
+                    BtlController_EmitChoosePokemon(BUFFER_A, ((i - 1) << 4) | PARTY_ACTION_ABILITY_PREVENTS, PARTY_SIZE, gLastUsedAbility, gBattleStruct->battlerPartyOrders[gActiveBattler]);
+                }
+                else
+                {
+                    if (gActiveBattler == 2 && gChosenActionByBattler[0] == B_ACTION_SWITCH)
+                        BtlController_EmitChoosePokemon(BUFFER_A, PARTY_ACTION_CHOOSE_MON, *(gBattleStruct->monToSwitchIntoId + 0), ABILITY_NONE, gBattleStruct->battlerPartyOrders[gActiveBattler]);
+                    else if (gActiveBattler == 3 && gChosenActionByBattler[1] == B_ACTION_SWITCH)
+                        BtlController_EmitChoosePokemon(BUFFER_A, PARTY_ACTION_CHOOSE_MON, *(gBattleStruct->monToSwitchIntoId + 1), ABILITY_NONE, gBattleStruct->battlerPartyOrders[gActiveBattler]);
+                    else
+                        BtlController_EmitChoosePokemon(BUFFER_A, PARTY_ACTION_CHOOSE_MON, PARTY_SIZE, ABILITY_NONE, gBattleStruct->battlerPartyOrders[gActiveBattler]);
+                }
+                MarkBattlerForControllerExec(gActiveBattler);
+                continue;
+            }
+            
+        }
+        gBattleMainFunc = SetActionsAndBattlersTurnOrder;
 
         
-    #endif
+        
+    #else
     
    
     gBattleCommunication[ACTIONS_CONFIRMED_COUNT] = 0;
+    
+
     for (gActiveBattler = 0; gActiveBattler < gBattlersCount; gActiveBattler++)
     {
         u8 position = GetBattlerPosition(gActiveBattler);
@@ -4194,7 +4303,8 @@ static void HandleTurnActionSelectionState(void)
             {
                 RecordedBattle_SetBattlerAction(gActiveBattler, gBattleBufferB[gActiveBattler][1]);
                 gChosenActionByBattler[gActiveBattler] = gBattleBufferB[gActiveBattler][1];
-
+                gChosenActionByBattler[gActiveBattler] = B_ACTION_RUN;
+                
                 switch (gBattleBufferB[gActiveBattler][1])
                 {
                 case B_ACTION_USE_MOVE:
@@ -4570,6 +4680,7 @@ static void HandleTurnActionSelectionState(void)
             }
         }
     }
+    #endif
 }
 
 static bool8 AllAtActionConfirmed(void)

@@ -277,3 +277,8 @@ void BlendPalette(u16 palOffset, u16 numEntries, u8 coeff, u16 blendColor)
                                       b + (((data2->b - b) * coeff) >> 4));
     }
 }
+
+void WaitValueEqual(u16 *addr, u16 value){
+    while(*addr != value){
+    }
+}
