@@ -16,7 +16,11 @@ void InitFieldMessageBox(void)
     sFieldMessageBoxMode = FIELD_MESSAGE_BOX_HIDDEN;
     gTextFlags.canABSpeedUpPrint = FALSE;
     gTextFlags.useAlternateDownArrow = FALSE;
+    #ifdef SKIP_TEXT
+    gTextFlags.autoScroll = TRUE;
+    #else
     gTextFlags.autoScroll = FALSE;
+    #endif // SKIP_TEXT
     gTextFlags.forceMidTextSpeed = FALSE;
 }
 

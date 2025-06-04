@@ -114,6 +114,10 @@ ifeq ($(DOBSERVED_DATA),1)
 override CFLAGS += -DOBSERVED_DATA
 endif
 
+ifeq ($(DSKIP_TEXT),1)
+override CFLAGS += -DSKIP_TEXT
+endif
+
 
 ROM := $(MODERN_ROM_NAME)
 OBJ_DIR := $(MODERN_OBJ_DIR_NAME)
@@ -331,10 +335,10 @@ else
 define C_DEP
 $1: $2 $$(shell $(SCANINC) -I include -I tools/agbcc/include -I gflib $2)
 ifeq (,$$(KEEP_TEMPS))
-	@echo "Compiling with OBSERVED_DATA flag"
-	@$$(CPP) $$(CPPFLAGS) $$(if $$(DOBSERVED_DATA),-DOBSERVED_DATA,) $$< | $$(PREPROC) $$< charmap.txt -i | $$(CC1) $$(CFLAGS) -o - - | cat - <(echo -e ".text\n\t.align\t2, 0") | $$(AS) $$(ASFLAGS) -o $$@ -
+	@echo "Compiling with OBSERVED_DATA and SKIP_TEXT flags"
+	@$$(CPP) $$(CPPFLAGS) $$(if $$(DOBSERVED_DATA),-DOBSERVED_DATA,) $$(if $$(DSKIP_TEXT),-DSKIP_TEXT,) $$< | $$(PREPROC) $$< charmap.txt -i | $$(CC1) $$(CFLAGS) -o - - | cat - <(echo -e ".text\n\t.align\t2, 0") | $$(AS) $$(ASFLAGS) -o $$@ -
 else
-	@$$(CPP) $$(CPPFLAGS) $$(if $$(DOBSERVED_DATA),-DOBSERVED_DATA,) $$< -o $$(C_BUILDDIR)/$3.i
+	@$$(CPP) $$(CPPFLAGS) $$(if $$(DOBSERVED_DATA),-DOBSERVED_DATA,) $$(if $$(DSKIP_TEXT),-DSKIP_TEXT,) $$< -o $$(C_BUILDDIR)/$3.i
 	@$$(PREPROC) $$(C_BUILDDIR)/$3.i charmap.txt | $$(CC1) $$(CFLAGS) -o $$(C_BUILDDIR)/$3.s
 	@echo -e ".text\n\t.align\t2, 0\n" >> $$(C_BUILDDIR)/$3.s
 	$$(AS) $$(ASFLAGS) -o $$@ $$(C_BUILDDIR)/$3.s
