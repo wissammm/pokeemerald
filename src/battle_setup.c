@@ -1394,10 +1394,13 @@ void ShowTrainerIntroSpeech(void)
 
         ShowFieldMessageFromBuffer();
     }
+
+    #ifndef SKIP_TEXT
     else
     {
         ShowFieldMessage(GetIntroSpeechOfApproachingTrainer());
     }
+    #endif // !SKIP_TEXT
 }
 
 const u8 *BattleSetup_GetScriptAddrAfterBattle(void)

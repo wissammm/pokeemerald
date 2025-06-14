@@ -335,7 +335,7 @@ else
 define C_DEP
 $1: $2 $$(shell $(SCANINC) -I include -I tools/agbcc/include -I gflib $2)
 ifeq (,$$(KEEP_TEMPS))
-	@echo "Compiling with OBSERVED_DATA and SKIP_TEXT flags"
+	# @echo "Compiling with OBSERVED_DATA and SKIP_TEXT flags"
 	@$$(CPP) $$(CPPFLAGS) $$(if $$(DOBSERVED_DATA),-DOBSERVED_DATA,) $$(if $$(DSKIP_TEXT),-DSKIP_TEXT,) $$< | $$(PREPROC) $$< charmap.txt -i | $$(CC1) $$(CFLAGS) -o - - | cat - <(echo -e ".text\n\t.align\t2, 0") | $$(AS) $$(ASFLAGS) -o $$@ -
 else
 	@$$(CPP) $$(CPPFLAGS) $$(if $$(DOBSERVED_DATA),-DOBSERVED_DATA,) $$(if $$(DSKIP_TEXT),-DSKIP_TEXT,) $$< -o $$(C_BUILDDIR)/$3.i

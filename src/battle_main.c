@@ -247,16 +247,19 @@ EWRAM_DATA u8 gBattleMonForms[MAX_BATTLERS_COUNT] = {0};
 
 #ifdef OBSERVED_DATA
     // Tested values
-    DUMP_DATA u16 testBuffer = 0;
+    DUMP_DATA volatile u16 testBuffer = 0;
     
     // Data to retrives
     #define MON_DATA_U32_SIZE 36
     DUMP_DATA u32 monDataPlayer[MON_DATA_U32_SIZE*PARTY_SIZE];
     DUMP_DATA u32 monDataEnemy[MON_DATA_U32_SIZE*PARTY_SIZE];
+    DUMP_DATA u16 legalMoveActions[4];
+    DUMP_DATA u16 legalSwitchActions[PARTY_SIZE];
     
     // Wait Value
-    DUMP_DATA u16 waitHandleTurn = 0;
-    DUMP_DATA u16 expectedWaitHandleTurn = 1;
+    DUMP_DATA u16 volatile stopHandleTurn = 0;
+    DUMP_DATA u16 volatile actionDone = 3;
+
 #endif
 
 
@@ -4145,43 +4148,99 @@ enum
     STATE_SELECTION_SCRIPT_MAY_RUN
 };
 
+void DumpMonData(){
+    s32 i;
+    for (i = 0; i < PARTY_SIZE; i++)
+    {
+        DumpPartyMonData(&gPlayerParty[i], monDataPlayer + i * MON_DATA_U32_SIZE);
+        // use a for but can be replaced by 1 or 2 bc our case is only for 1v1 
+        for (int b = 0; b < gBattlersCount; b++)
+        {
+            if (GetBattlerSide(b) == B_SIDE_PLAYER && gBattlerPartyIndexes[b] == i)
+                monDataPlayer[i * MON_DATA_U32_SIZE + 30] = gBattleMons[b].status2;
+                monDataPlayer[i * MON_DATA_U32_SIZE] = TRUE;
 
+        }
+    }
+    for (i = 0; i < PARTY_SIZE; i++)
+    {
+        DumpPartyMonData(&gEnemyParty[i], monDataEnemy + i * MON_DATA_U32_SIZE);
+        for (int b = 0; b < gBattlersCount; b++)
+        {
+            if (GetBattlerSide(b) == B_SIDE_OPPONENT && gBattlerPartyIndexes[b] == i)
+                monDataEnemy[i * MON_DATA_U32_SIZE + 30] = gBattleMons[b].status2;
+                monDataEnemy[i * MON_DATA_U32_SIZE] = TRUE;
+        }
+    }
+}
+
+void DumpLegalMoves(int gActiveBattler){
+    s32 i;
+
+    u8 numLegalMoves = 0;
+
+    for (i = 0; i < MAX_MON_MOVES; i++)
+    {
+        u16 move = gBattleMons[gActiveBattler].moves[i];
+        u8 pp = gBattleMons[gActiveBattler].pp[i];
+
+        if (move != MOVE_NONE && pp > 0)
+        {
+            legalMoveActions[i] = TRUE;
+        }
+        else
+        {
+            legalMoveActions[i] = FALSE;
+        }
+    }
+
+    u8 numLegalSwitches = 0;
+
+    for (i = 0; i < PARTY_SIZE; i++)
+    {
+        if (i == gBattlerPartyIndexes[gActiveBattler])
+        {
+            legalSwitchActions[i] = FALSE; 
+            continue;
+        }
+
+        if (GetMonData(&gPlayerParty[i], MON_DATA_HP) == 0)
+        {
+            legalSwitchActions[i] = FALSE; 
+            continue;
+        }
+
+        if (GetMonData(&gPlayerParty[i], MON_DATA_IS_EGG))
+        {
+            legalSwitchActions[i] = FALSE; 
+            continue;
+        }
+
+        if (gBattleMons[gActiveBattler].status2 & (STATUS2_WRAPPED | STATUS2_ESCAPE_PREVENTION)
+            || gBattleTypeFlags & BATTLE_TYPE_ARENA
+            || gStatuses3[gActiveBattler] & STATUS3_ROOTED)
+            {
+                legalSwitchActions[i] = FALSE; 
+                continue;
+            }
+            
+
+        legalSwitchActions[i] = TRUE; 
+    }
+}
 
 static void HandleTurnActionSelectionState(void)
 {
     s32 i;
 
     #ifdef OBSERVED_DATA
-        for (i = 0; i < PARTY_SIZE; i++)
-        {
-            DumpPartyMonData(&gPlayerParty[i], monDataPlayer + i * MON_DATA_U32_SIZE);
-            // use a for but can be replaced by 1 or 2 bc our case is only for 1v1 
-            for (int b = 0; b < gBattlersCount; b++)
-            {
-                if (GetBattlerSide(b) == B_SIDE_PLAYER && gBattlerPartyIndexes[b] == i)
-                    monDataPlayer[i * MON_DATA_U32_SIZE + 30] = gBattleMons[b].status2;
-                    monDataPlayer[i * MON_DATA_U32_SIZE] = TRUE;
-
-            }
-        }
-        for (i = 0; i < PARTY_SIZE; i++)
-        {
-            DumpPartyMonData(&gEnemyParty[i], monDataEnemy + i * MON_DATA_U32_SIZE);
-            for (int b = 0; b < gBattlersCount; b++)
-            {
-                if (GetBattlerSide(b) == B_SIDE_OPPONENT && gBattlerPartyIndexes[b] == i)
-                    monDataEnemy[i * MON_DATA_U32_SIZE + 30] = gBattleMons[b].status2;
-                    monDataEnemy[i * MON_DATA_U32_SIZE] = TRUE;
-            }
-        }
-        testBuffer = 1;
-        // WaitValueEqual(waitHandleTurn,expectedWaitHandleTurn);
+        DumpMonData();
         
         for (gActiveBattler = 0; gActiveBattler < gBattlersCount; gActiveBattler++)
         {
+            DumpLegalMoves(gActiveBattler);
 
-            
-            u8 actionDone = 4;
+            stopHandleTurn = 1;
             // u8 action = gBattleBufferB[gActiveBattler][1];
             // gChosenActionByBattler[gActiveBattler] = action;
             if (actionDone < 4){
@@ -4241,6 +4300,8 @@ static void HandleTurnActionSelectionState(void)
                     continue;
                 }
             }
+            stopHandleTurn = 0;
+
             
         }
         gBattleMainFunc = SetActionsAndBattlersTurnOrder;
