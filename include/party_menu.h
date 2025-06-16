@@ -31,6 +31,8 @@ extern void (*gItemUseCB)(u8, TaskFunc);
 
 extern const u16 gTutorMoves[];
 
+u8 GetAllMovesLearnableByMon(u16 species, u32* dst);
+
 void AnimatePartySlot(u8 slot, u8 animNum);
 bool8 IsMultiBattle(void);
 u8 GetCursorSelectionMonId(void);

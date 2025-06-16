@@ -1400,6 +1400,7 @@ const s8 gNatureStatTable[NUM_NATURES][NUM_NATURE_STATS] =
 #include "data/pokemon/evolution.h"
 #include "data/pokemon/level_up_learnset_pointers.h"
 
+
 // SPECIES_NONE are ignored in the following two tables, so decrement before accessing these arrays to get the right result
 
 static const u8 sMonFrontAnimIdsTable[NUM_SPECIES - 1] =
@@ -7140,4 +7141,74 @@ u8 *MonSpritesGfxManager_GetSpritePtr(u8 managerId, u8 spriteNum)
 
         return gfx->spritePointers[spriteNum];
     }
+}
+#define MAX_MOVES 64
+
+static u8 MoveAlreadyExists(u32 *moves, u32 move, int numMoves) {
+    for (int i = 0; i < numMoves; i++) {
+        if (moves[i] == move) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+static int AddMove(u32 *moves, u32 move, int numMoves) {
+    if (!MoveAlreadyExists(moves, move, numMoves)) {
+        moves[numMoves] = move;
+        return numMoves + 1;
+    }
+    return numMoves;
+}
+
+int RetrivesAllMoves(u16 species, u32 *moves) {
+    if (species >= NUM_SPECIES) {
+        DebugPrintf("Invalid species ID: %d\n", species);
+        return 0 ;
+    }
+        
+    int numMoves = GetAllMovesLearnableByMon(species, moves); 
+
+    const u16 *learnset = gLevelUpLearnsets[species];
+    for (int i = 0; learnset[i] != LEVEL_UP_END; i++) {
+        u16 levelMove = learnset[i];
+        u16 level = levelMove >> 9;
+        u16 move = levelMove & 0x1FF;
+
+        numMoves = AddMove(moves, move, numMoves);
+        if (numMoves >= MAX_MOVES) break;
+    }
+
+
+    for (int i = 0; i < numMoves; ++i){
+        DebugPrintf("Move %d: %d\n", i, moves[i]);
+    }
+
+
+
+    // while (numMoves < MAX_MOVES) {
+    //     moves[numMoves] = 0;
+    //     numMoves++;
+    // }
+    return numMoves;
+}
+
+void PrintPokemonData(u16 species){
+    if (species >= NUM_SPECIES) {
+        DebugPrintf("Invalid species ID: %d\n", species);
+        return;
+    }
+    const struct SpeciesInfo *info = &gSpeciesInfo[species];
+    DebugPrintf("Species: %d\n", species);
+    DebugPrintf("baseHP: %d\n", info->baseHP);
+    DebugPrintf("baseAttack: %d\n", info->baseAttack);
+    DebugPrintf("baseDefense: %d\n", info->baseDefense);
+    DebugPrintf("baseSpeed: %d\n", info->baseSpeed);
+    DebugPrintf("baseSpAttack: %d\n", info->baseSpAttack);
+    DebugPrintf("baseSpDefense: %d\n", info->baseSpDefense);
+    DebugPrintf("type0: %d\n", info->types[0]);
+    DebugPrintf("type1: %d\n", info->types[1]);
+    u32 moves[MAX_MOVES] = {0};
+    RetrivesAllMoves(species, moves);
+    
 }

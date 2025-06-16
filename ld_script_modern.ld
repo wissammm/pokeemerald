@@ -12,7 +12,7 @@ MEMORY
 
 SECTIONS {
 
-    .dump_data 0x0203D000 : ALIGN(4)
+    .dump_data : ALIGN(4)
     {
         KEEP(*(.dump_data));
     } > EWRAM

@@ -2071,6 +2071,25 @@ static bool8 CanLearnTutorMove(u16 species, u8 tutor)
         return FALSE;
 }
 
+u8 GetAllMovesLearnableByMon(u16 species, u32* dst)
+{
+    u8 i;
+    u8 count = 0;
+    u32 learnset = sTutorLearnsets[species];
+    for (i = 0; i < TUTOR_MOVE_COUNT; i++)
+    {
+        if (learnset & (1 << i))
+        {
+            u16 move = GetTutorMove(i);
+            if (move != MOVE_NONE)
+                *dst++ = move;
+                count++;
+        }
+
+    }
+    return count;
+}
+
 static void InitPartyMenuWindows(u8 layout)
 {
     u8 i;

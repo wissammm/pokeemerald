@@ -4228,14 +4228,14 @@ void DumpLegalMoves(int gActiveBattler){
         legalSwitchActions[i] = TRUE; 
     }
 }
-#include "create_dataset.h"
+
+
 
 static void HandleTurnActionSelectionState(void)
 {
     s32 i;
-    PrintPokemonData(SPECIES_BULBASAUR); 
 
-
+    PrintPokemonData(1);
     #ifdef OBSERVED_DATA
         DumpMonData();
         

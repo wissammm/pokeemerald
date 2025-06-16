@@ -17,7 +17,7 @@ __anim_mon_load_address = 0x8b00000;
 __gfx_load_address = 0x8c00000;
 
 SECTIONS {
-    .dump_data 0x0203D000 (NOLOAD) :
+    .dump_data (NOLOAD) :
     {
         KEEP(*(.dump_data));
     } > EWRAM

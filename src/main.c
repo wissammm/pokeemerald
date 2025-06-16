@@ -24,7 +24,7 @@
 #include "main.h"
 #include "trainer_hill.h"
 #include "constants/rgb.h"
-// #include "create_dataset.h"
+#include "create_dataset.h"
 
 static void VBlankIntr(void);
 static void HBlankIntr(void);
@@ -89,7 +89,7 @@ void EnableVCountIntrAtLine150(void);
 
 void AgbMain()
 {
-    // print_pokemon_data(SPECIES_BULBASAUR); 
+    // PrintPokemonData(SPECIES_BULBASAUR);
     // Modern compilers are liberal with the stack on entry to this function,
     // so RegisterRamReset may crash if it resets IWRAM.
 #if !MODERN
