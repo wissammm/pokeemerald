@@ -56,6 +56,8 @@
 
 #define FRIENDSHIP_EVO_THRESHOLD 220
 
+#define MAX_MOVES            356
+
 struct SpeciesItem
 {
     u16 species;
@@ -7142,7 +7144,7 @@ u8 *MonSpritesGfxManager_GetSpritePtr(u8 managerId, u8 spriteNum)
         return gfx->spritePointers[spriteNum];
     }
 }
-#define MAX_MOVES 64
+
 
 static u8 MoveAlreadyExists(u32 *moves, u32 move, int numMoves) {
     for (int i = 0; i < numMoves; i++) {
@@ -7160,6 +7162,28 @@ static int AddMove(u32 *moves, u32 move, int numMoves) {
     }
     return numMoves;
 }
+
+u8 GetSpeciesTMHMMoves(u16 species, u32 *moves)
+{
+    u8 num = 0;
+    u8 moveName[20];
+    if (species == SPECIES_EGG)
+        return 0;
+
+    for (int tm = 0; tm < ITEM_HM08 - ITEM_TM01; ++tm) // Use TM/HM index, not item id
+    {
+        u16 itemId = ITEM_TM01 + tm;
+        u16 moveId = ItemIdToBattleMoveId(itemId);
+        StringCopy(moveName, gMoveNames[moveId]);
+        if (CanSpeciesLearnTMHM(species, tm))
+        {
+            moves[num++] = (u32)moveId;
+            DebugPrintf("Species %d can learn TM/HM %d: %S\n", species, itemId, moveName);
+        }
+    }
+    return num;
+}
+
 
 int RetrivesAllMoves(u16 species, u32 *moves) {
     if (species >= NUM_SPECIES) {
@@ -7184,14 +7208,9 @@ int RetrivesAllMoves(u16 species, u32 *moves) {
         DebugPrintf("Move %d: %d\n", i, moves[i]);
     }
 
-
-
-    // while (numMoves < MAX_MOVES) {
-    //     moves[numMoves] = 0;
-    //     numMoves++;
-    // }
     return numMoves;
 }
+
 
 void PrintPokemonData(u16 species){
     if (species >= NUM_SPECIES) {
@@ -7209,6 +7228,6 @@ void PrintPokemonData(u16 species){
     DebugPrintf("type0: %d\n", info->types[0]);
     DebugPrintf("type1: %d\n", info->types[1]);
     u32 moves[MAX_MOVES] = {0};
-    RetrivesAllMoves(species, moves);
+    GetSpeciesTMHMMoves(species, moves);
     
 }

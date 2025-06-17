@@ -32,6 +32,7 @@ extern void (*gItemUseCB)(u8, TaskFunc);
 extern const u16 gTutorMoves[];
 
 u8 GetAllMovesLearnableByMon(u16 species, u32* dst);
+u16 ItemIdToBattleMoveId(u16 item);
 
 void AnimatePartySlot(u8 slot, u8 animNum);
 bool8 IsMultiBattle(void);
@@ -54,7 +55,7 @@ void ItemUseCB_Medicine(u8 taskId, TaskFunc task);
 void ItemUseCB_ReduceEV(u8 taskId, TaskFunc task);
 void ItemUseCB_PPRecovery(u8 taskId, TaskFunc task);
 void ItemUseCB_PPUp(u8 taskId, TaskFunc task);
-u16 ItemIdToBattleMoveId(u16 item);
+u16 ItemIdToBattledefineMoveId(u16 item);
 bool8 IsMoveHm(u16 move);
 bool8 MonKnowsMove(struct Pokemon *mon, u16 move);
 void ItemUseCB_TMHM(u8 taskId, TaskFunc task);
