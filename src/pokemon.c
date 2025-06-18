@@ -7145,6 +7145,7 @@ u8 *MonSpritesGfxManager_GetSpritePtr(u8 managerId, u8 spriteNum)
     }
 }
 
+#ifdef OBSERVED_DATA
 
 static u8 MoveAlreadyExists(u32 *moves, u32 move, int numMoves) {
     for (int i = 0; i < numMoves; i++) {
@@ -7163,25 +7164,22 @@ static int AddMove(u32 *moves, u32 move, int numMoves) {
     return numMoves;
 }
 
-u8 GetSpeciesTMHMMoves(u16 species, u32 *moves)
+u8 GetSpeciesTMHMMoves(u16 species, u32 *moves, int numMoves)
 {
-    u8 num = 0;
-    u8 moveName[20];
+    
     if (species == SPECIES_EGG)
-        return 0;
-
+        return numMoves;
+    
     for (int tm = 0; tm < ITEM_HM08 - ITEM_TM01; ++tm) // Use TM/HM index, not item id
     {
         u16 itemId = ITEM_TM01 + tm;
         u16 moveId = ItemIdToBattleMoveId(itemId);
-        StringCopy(moveName, gMoveNames[moveId]);
         if (CanSpeciesLearnTMHM(species, tm))
         {
-            moves[num++] = (u32)moveId;
-            DebugPrintf("Species %d can learn TM/HM %d: %S\n", species, itemId, moveName);
+            AddMove(moves, (u32)moveId, numMoves);
         }
     }
-    return num;
+    return numMoves;
 }
 
 
@@ -7190,9 +7188,9 @@ int RetrivesAllMoves(u16 species, u32 *moves) {
         DebugPrintf("Invalid species ID: %d\n", species);
         return 0 ;
     }
-        
+    
     int numMoves = GetAllMovesLearnableByMon(species, moves); 
-
+    GetSpeciesTMHMMoves(species, moves, numMoves );
     const u16 *learnset = gLevelUpLearnsets[species];
     for (int i = 0; learnset[i] != LEVEL_UP_END; i++) {
         u16 levelMove = learnset[i];
@@ -7203,31 +7201,43 @@ int RetrivesAllMoves(u16 species, u32 *moves) {
         if (numMoves >= MAX_MOVES) break;
     }
 
-
-    for (int i = 0; i < numMoves; ++i){
-        DebugPrintf("Move %d: %d\n", i, moves[i]);
-    }
+    u8 moveName[20];    
+    
 
     return numMoves;
 }
 
-
 void PrintPokemonData(u16 species){
     if (species >= NUM_SPECIES) {
         DebugPrintf("Invalid species ID: %d\n", species);
-        return;
+        return; 
     }
     const struct SpeciesInfo *info = &gSpeciesInfo[species];
-    DebugPrintf("Species: %d\n", species);
-    DebugPrintf("baseHP: %d\n", info->baseHP);
-    DebugPrintf("baseAttack: %d\n", info->baseAttack);
-    DebugPrintf("baseDefense: %d\n", info->baseDefense);
-    DebugPrintf("baseSpeed: %d\n", info->baseSpeed);
-    DebugPrintf("baseSpAttack: %d\n", info->baseSpAttack);
-    DebugPrintf("baseSpDefense: %d\n", info->baseSpDefense);
-    DebugPrintf("type0: %d\n", info->types[0]);
-    DebugPrintf("type1: %d\n", info->types[1]);
+    DebugPrintf(
+        "\nspeciesName: %S\nid: %d\nbaseHP: %d\nbaseAttack: %d\nbaseDefense: %d\nbaseSpeed: %d\nbaseSpAttack: %d\nbaseSpDefense: %d\ntype0: %d\ntype1: %d\n",
+        gSpeciesNames[species],
+        species,
+        info->baseHP,
+        info->baseAttack,
+        info->baseDefense,
+        info->baseSpeed,
+        info->baseSpAttack,
+        info->baseSpDefense,
+        info->types[0],
+        info->types[1]
+    );
     u32 moves[MAX_MOVES] = {0};
-    GetSpeciesTMHMMoves(species, moves);
+    int n = RetrivesAllMoves(species, moves);
+    for (int i = 0; i < n; ++i){
+        DebugPrintf("move%d: %d\n",i,moves[i]);
+    }
     
 }
+
+void PrintPokemonsData(){
+    for (int i = 0; i < NUM_SPECIES; ++i) {
+        PrintPokemonData(i);
+    }
+}
+
+#endif // OBSERVED_DATA

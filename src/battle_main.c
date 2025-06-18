@@ -4235,7 +4235,7 @@ static void HandleTurnActionSelectionState(void)
 {
     s32 i;
 
-    PrintPokemonData(1);
+    PrintPokemonsData();
     #ifdef OBSERVED_DATA
         DumpMonData();
         

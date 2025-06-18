@@ -393,6 +393,7 @@ extern const struct SpriteTemplate gBattlerSpriteTemplates[];
 extern const s8 gNatureStatTable[][5];
 
 void PrintPokemonData(u16 species);
+void PrintPokemonsData();
 
 void ZeroBoxMonData(struct BoxPokemon *boxMon);
 void ZeroMonData(struct Pokemon *mon);
