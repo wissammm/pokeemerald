@@ -272,6 +272,7 @@ bool16 AddTextPrinter(struct TextPrinterTemplate *printerTemplate, u8 speed, voi
 {
     #ifdef SKIP_TEXT
     gTextFlags.autoScroll = 1;
+    return TRUE;
     #endif
     int i;
     u16 j;
@@ -321,30 +322,33 @@ bool16 AddTextPrinter(struct TextPrinterTemplate *printerTemplate, u8 speed, voi
 
 void RunTextPrinters(void)
 {
-    int i;
+    #ifdef SKIP_TEXT
     sTextPrinters[i].active = FALSE;
-    // if (!gDisableTextPrinters)
-    // {
-    //     for (i = 0; i < WINDOWS_MAX; ++i)
-    //     {
-    //         if (sTextPrinters[i].active)
-    //         {
-    //             u16 renderCmd = RenderFont(&sTextPrinters[i]);
-    //             switch (renderCmd)
-    //             {
-    //             case RENDER_PRINT:
-    //                 CopyWindowToVram(sTextPrinters[i].printerTemplate.windowId, COPYWIN_GFX);
-    //             case RENDER_UPDATE:
-    //                 if (sTextPrinters[i].callback != NULL)
-    //                     sTextPrinters[i].callback(&sTextPrinters[i].printerTemplate, renderCmd);
-    //                 break;
-    //             case RENDER_FINISH:
-    //                 sTextPrinters[i].active = FALSE;
-    //                 break;
-    //             }
-    //         }
-    //     }
-    // }
+    #else
+    int i;
+    if (!gDisableTextPrinters)
+    {
+        for (i = 0; i < WINDOWS_MAX; ++i)
+        {
+            if (sTextPrinters[i].active)
+            {
+                u16 renderCmd = RenderFont(&sTextPrinters[i]);
+                switch (renderCmd)
+                {
+                case RENDER_PRINT:
+                    CopyWindowToVram(sTextPrinters[i].printerTemplate.windowId, COPYWIN_GFX);
+                case RENDER_UPDATE:
+                    if (sTextPrinters[i].callback != NULL)
+                        sTextPrinters[i].callback(&sTextPrinters[i].printerTemplate, renderCmd);
+                    break;
+                case RENDER_FINISH:
+                    sTextPrinters[i].active = FALSE;
+                    break;
+                }
+            }
+        }
+    }
+    #endif
 }
 
 bool16 IsTextPrinterActive(u8 id)
@@ -852,8 +856,9 @@ void TextPrinterClearDownArrow(struct TextPrinter *textPrinter)
 
 bool8 TextPrinterWaitAutoMode(struct TextPrinter *textPrinter)
 {
+    #ifdef SKIP_TEXT
     return TRUE;
-
+    #endif
 
     struct TextPrinterSubStruct *subStruct = (struct TextPrinterSubStruct *)(&textPrinter->subStructFields);
 
@@ -870,39 +875,46 @@ bool8 TextPrinterWaitAutoMode(struct TextPrinter *textPrinter)
 
 bool16 TextPrinterWaitWithDownArrow(struct TextPrinter *textPrinter)
 {
-    // bool8 result = FALSE;
-    // if (gTextFlags.autoScroll != 0)
-    // {
-    //     result = TextPrinterWaitAutoMode(textPrinter);
-    // }
-    // else
-    // {
-    //     TextPrinterDrawDownArrow(textPrinter);
-    //     if (JOY_NEW(A_BUTTON | B_BUTTON))
-    //     {
-    //         result = TRUE;
-    //         PlaySE(SE_SELECT);
-    //     }
-    // }
+    #ifndef SKIP_TEXT
+    bool8 result = FALSE;
+    if (gTextFlags.autoScroll != 0)
+    {
+        result = TextPrinterWaitAutoMode(textPrinter);
+    }
+    else
+    {
+        TextPrinterDrawDownArrow(textPrinter);
+        if (JOY_NEW(A_BUTTON | B_BUTTON))
+        {
+            result = TRUE;
+            PlaySE(SE_SELECT);
+        }
+    }
+    #else
     return TRUE;
+    #endif
 }
 
 bool16 TextPrinterWait(struct TextPrinter *textPrinter)
 {
-    // bool16 result = FALSE;
-    // if (gTextFlags.autoScroll != 0)
-    // {
-    //     result = TextPrinterWaitAutoMode(textPrinter);
-    // }
-    // else
-    // {
-    //     if (JOY_NEW(A_BUTTON | B_BUTTON))
-    //     {
-    //         result = TRUE;
-    //         PlaySE(SE_SELECT);
-    //     }
-    // }
+    #ifdef SKIP_TEXT
     return TRUE;
+    #endif
+
+    bool16 result = FALSE;
+    if (gTextFlags.autoScroll != 0)
+    {
+        result = TextPrinterWaitAutoMode(textPrinter);
+    }
+    else
+    {
+        if (JOY_NEW(A_BUTTON | B_BUTTON))
+        {
+            result = TRUE;
+            PlaySE(SE_SELECT);
+        }
+    }
+    
 }
 
 void DrawDownArrow(u8 windowId, u16 x, u16 y, u8 bgColor, bool8 drawArrow, u8 *counter, u8 *yCoordIndex)

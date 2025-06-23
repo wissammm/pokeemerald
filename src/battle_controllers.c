@@ -1172,6 +1172,7 @@ void BtlController_EmitChooseItem(u8 bufferId, u8 *battlePartyOrder)
 
 void BtlController_EmitChoosePokemon(u8 bufferId, u8 caseId, u8 slotId, u8 abilityId, u8 *data)
 {
+    DebugPrintf("BtlController_EmitChoosePokemon: caseId %d, slotId %d, abilityId %d\n", caseId, slotId, abilityId);
     s32 i;
 
     sBattleBuffersTransferData[0] = CONTROLLER_CHOOSEPOKEMON;

@@ -110,14 +110,6 @@ else # Modern build
 CC1              = $(shell $(PATH_MODERNCC) --print-prog-name=cc1) -quiet
 override CFLAGS := -mthumb -mthumb-interwork -O2 -mabi=apcs-gnu -mtune=arm7tdmi -march=armv4t -fno-toplevel-reorder -Wno-pointer-to-int-cast
 
-ifeq ($(DOBSERVED_DATA),1)
-override CFLAGS += -DOBSERVED_DATA
-endif
-
-ifeq ($(DSKIP_TEXT),1)
-override CFLAGS += -DSKIP_TEXT
-endif
-
 
 ROM := $(MODERN_ROM_NAME)
 OBJ_DIR := $(MODERN_OBJ_DIR_NAME)

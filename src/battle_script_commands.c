@@ -4843,6 +4843,7 @@ static void Cmd_jumpifcantswitch(void)
 // Note that this is not used by the Switch action, only replacing fainted Pokémon or Baton Pass
 static void ChooseMonToSendOut(u8 slotId)
 {
+    DebugPrintf("ChooseMonToSendOut: slotId %d, gActiveBattler %d\n", slotId, gActiveBattler);
     *(gBattleStruct->battlerPartyIndexes + gActiveBattler) = gBattlerPartyIndexes[gActiveBattler];
     *(gBattleStruct->monToSwitchIntoId + gActiveBattler) = PARTY_SIZE;
     gBattleStruct->field_93 &= ~(gBitTable[gActiveBattler]);
@@ -4879,12 +4880,14 @@ static void Cmd_openpartyscreen(void)
                     }
                     else if (!gSpecialStatuses[gActiveBattler].faintedHasReplacement)
                     {
+                        DebugPrintf("Cmd_openpartyscreen: gActiveBattler %d, PARTY_SIZE %d\n", gActiveBattler, PARTY_SIZE);
                         ChooseMonToSendOut(PARTY_SIZE);
                         gSpecialStatuses[gActiveBattler].faintedHasReplacement = TRUE;
                     }
                 }
                 else
                 {
+                    DebugPrintf("Cmd_openpartyscreen: gActiveBattler %d, PARTY_SIZE %d\n", gActiveBattler, PARTY_SIZE);
                     BtlController_EmitLinkStandbyMsg(BUFFER_A, LINK_STANDBY_MSG_ONLY, FALSE);
                     MarkBattlerForControllerExec(gActiveBattler);
                 }
@@ -5101,11 +5104,42 @@ static void Cmd_openpartyscreen(void)
         }
         else
         {
+            #ifdef OBSERVED_DATA
+            // Auto-select the first valid Pokémon to switch in
+            gActiveBattler = battlerId;
+            u8 slot;
+            u8 found = FALSE;
+            for (slot = 0; slot < PARTY_SIZE; slot++)
+            {
+                if (slot == gBattlerPartyIndexes[gActiveBattler])
+                    continue;
+                if (GetMonData(&gPlayerParty[slot], MON_DATA_HP) > 0 &&
+                    !GetMonData(&gPlayerParty[slot], MON_DATA_IS_EGG) &&
+                    GetMonData(&gPlayerParty[slot], MON_DATA_SPECIES) > 0)
+                {
+                    DebugPrintf("Cmd_openpartyscreen: gActiveBattler %d, slot %d, species %d\n", gActiveBattler, slot, GetMonData(&gPlayerParty[slot], MON_DATA_SPECIES));
+                    gBattleStruct->monToSwitchIntoId[gActiveBattler] = slot;
+                    gBattlerPartyIndexes[gActiveBattler] = slot;
+                    found = TRUE;
+                    break;
+                }
+            }
+            if (!found) {
+                // No valid Pokémon to switch to, handle as fainted/no replacement
+                gAbsentBattlerFlags |= gBitTable[gActiveBattler];
+                gHitMarker &= ~HITMARKER_FAINTED(gActiveBattler);
+                gBattlescriptCurrInstr = jumpPtr; // jumpPtr is set at the top of Cmd_openpartyscreen
+                return;
+            }
+            gSpecialStatuses[gActiveBattler].faintedHasReplacement = TRUE;
+            gBattlescriptCurrInstr += 6;
+            
+            #else
             gActiveBattler = battlerId;
             *(gBattleStruct->battlerPartyIndexes + gActiveBattler) = gBattlerPartyIndexes[gActiveBattler];
             *(gBattleStruct->monToSwitchIntoId + gActiveBattler) = PARTY_SIZE;
             gBattleStruct->field_93 &= ~(gBitTable[gActiveBattler]);
-
+            DebugPrintf("Cmd_openpartyscreen ");
             BtlController_EmitChoosePokemon(BUFFER_A, hitmarkerFaintBits, *(gBattleStruct->monToSwitchIntoId + BATTLE_PARTNER(gActiveBattler)), ABILITY_NONE, gBattleStruct->battlerPartyOrders[gActiveBattler]);
             MarkBattlerForControllerExec(gActiveBattler);
 
@@ -5134,7 +5168,9 @@ static void Cmd_openpartyscreen(void)
                 BtlController_EmitLinkStandbyMsg(BUFFER_A, LINK_STANDBY_MSG_ONLY, FALSE);
                 MarkBattlerForControllerExec(gActiveBattler);
             }
+            #endif
         }
+        
     }
 }
 

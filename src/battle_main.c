@@ -4235,7 +4235,7 @@ static void HandleTurnActionSelectionState(void)
 {
     s32 i;
 
-    PrintPokemonsData();
+    // PrintPokemonsData();
     #ifdef OBSERVED_DATA
         DumpMonData();
         
@@ -4244,9 +4244,21 @@ static void HandleTurnActionSelectionState(void)
             DumpLegalMoves(gActiveBattler);
 
             stopHandleTurn = 1;
-            // u8 action = gBattleBufferB[gActiveBattler][1];
-            // gChosenActionByBattler[gActiveBattler] = action;
-            if (actionDone < 4){
+           
+            if (gBattleMons[gActiveBattler].hp == 0)
+            {
+               DebugPrintf("Battler %d is fainted, skipping action selection.\n", gActiveBattler);
+                if ( gBattlerPartyIndexes[gActiveBattler] != 0)
+                {
+                    gChosenActionByBattler[gActiveBattler] = B_ACTION_SWITCH;
+                    *(gBattleStruct->monToSwitchIntoId + gActiveBattler) = 0;
+                    *(gBattleStruct->battlerPartyIndexes + gActiveBattler) = gBattlerPartyIndexes[gActiveBattler];
+                    gBattleCommunication[gActiveBattler] = STATE_WAIT_ACTION_CONFIRMED_STANDBY;
+                    continue;
+                }
+            }
+          
+            else if (actionDone < 4){
                 if (AreAllMovesUnusable())
                 {
                     gBattleCommunication[gActiveBattler] = STATE_SELECTION_SCRIPT;
@@ -4283,6 +4295,7 @@ static void HandleTurnActionSelectionState(void)
                     || gBattleTypeFlags & BATTLE_TYPE_ARENA
                     || gStatuses3[gActiveBattler] & STATUS3_ROOTED)
                 {
+                    DebugPrintf("Battler %d cannot switch due to being wrapped or rooted.\n", gActiveBattler);
                     BtlController_EmitChoosePokemon(BUFFER_A, PARTY_ACTION_CANT_SWITCH, PARTY_SIZE, ABILITY_NONE, gBattleStruct->battlerPartyOrders[gActiveBattler]);
                 }
                 else if ((i = ABILITY_ON_OPPOSING_FIELD(gActiveBattler, ABILITY_SHADOW_TAG))
@@ -4292,6 +4305,7 @@ static void HandleTurnActionSelectionState(void)
                         || ((i = AbilityBattleEffects(ABILITYEFFECT_CHECK_FIELD_EXCEPT_BATTLER, gActiveBattler, ABILITY_MAGNET_PULL, 0, 0))
                             && IS_BATTLER_OF_TYPE(gActiveBattler, TYPE_STEEL)))
                 {
+                    DebugPrintf("Battler %d cannot switch \n", gActiveBattler);
                     BtlController_EmitChoosePokemon(BUFFER_A, ((i - 1) << 4) | PARTY_ACTION_ABILITY_PREVENTS, PARTY_SIZE, gLastUsedAbility, gBattleStruct->battlerPartyOrders[gActiveBattler]);
                 }
                 else
