@@ -307,6 +307,16 @@ ifeq ($(DINFO),1)
 override CFLAGS += -g
 endif
 
+ifeq ($(DOBSERVED_DATA),1)
+CFLAGS += -DOBSERVED_DATA
+CPPFLAGS += -DOBSERVED_DATA
+endif
+
+ifeq ($(DSKIP_TEXT),1)
+CFLAGS += -DSKIP_TEXT
+CPPFLAGS += -DSKIP_TEXT
+endif
+
 # The dep rules have to be explicit or else missing files won't be reported.
 # As a side effect, they're evaluated immediately instead of when the rule is invoked.
 # It doesn't look like $(shell) can be deferred so there might not be a better way.
@@ -327,9 +337,10 @@ else
 define C_DEP
 $1: $2 $$(shell $(SCANINC) -I include -I tools/agbcc/include -I gflib $2)
 ifeq (,$$(KEEP_TEMPS))
-	@$$(CPP) $$(CPPFLAGS) $$(if $$(DOBSERVED_DATA),-DOBSERVED_DATA,) $$(if $$(DSKIP_TEXT),-DSKIP_TEXT,) $$< | $$(PREPROC) $$< charmap.txt -i | $$(CC1) $$(CFLAGS) -o - - | cat - <(echo -e ".text\n\t.align\t2, 0") | $$(AS) $$(ASFLAGS) -o $$@ -
+	@echo "$$(CC1) <flags> -o $$@ $$<"
+	@$$(CPP) $$(CPPFLAGS) $$< | $$(PREPROC) $$< charmap.txt -i | $$(CC1) $$(CFLAGS) -o - - | cat - <(echo -e ".text\n\t.align\t2, 0") | $$(AS) $$(ASFLAGS) -o $$@ -
 else
-	@$$(CPP) $$(CPPFLAGS) $$(if $$(DOBSERVED_DATA),-DOBSERVED_DATA,) $$(if $$(DSKIP_TEXT),-DSKIP_TEXT,) $$< -o $$(C_BUILDDIR)/$3.i
+	@$$(CPP) $$(CPPFLAGS) $$< -o $$(C_BUILDDIR)/$3.i
 	@$$(PREPROC) $$(C_BUILDDIR)/$3.i charmap.txt | $$(CC1) $$(CFLAGS) -o $$(C_BUILDDIR)/$3.s
 	@echo -e ".text\n\t.align\t2, 0\n" >> $$(C_BUILDDIR)/$3.s
 	$$(AS) $$(ASFLAGS) -o $$@ $$(C_BUILDDIR)/$3.s

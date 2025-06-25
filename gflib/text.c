@@ -322,10 +322,14 @@ bool16 AddTextPrinter(struct TextPrinterTemplate *printerTemplate, u8 speed, voi
 
 void RunTextPrinters(void)
 {
-    #ifdef SKIP_TEXT
-    sTextPrinters[i].active = FALSE;
-    #else
     int i;
+    #ifdef SKIP_TEXT
+    for (i = 0; i < WINDOWS_MAX; ++i)
+    {
+        sTextPrinters[i].active = FALSE;
+    }
+    #else
+    
     if (!gDisableTextPrinters)
     {
         for (i = 0; i < WINDOWS_MAX; ++i)
@@ -890,6 +894,7 @@ bool16 TextPrinterWaitWithDownArrow(struct TextPrinter *textPrinter)
             PlaySE(SE_SELECT);
         }
     }
+    return result;
     #else
     return TRUE;
     #endif
@@ -914,6 +919,7 @@ bool16 TextPrinterWait(struct TextPrinter *textPrinter)
             PlaySE(SE_SELECT);
         }
     }
+    return result;
     
 }
 

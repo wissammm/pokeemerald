@@ -245,6 +245,13 @@ EWRAM_DATA u8 gBattleMonForms[MAX_BATTLERS_COUNT] = {0};
 #endif
 
 
+#ifdef SKIP_TEXT
+#warning "SKIP_TEXT is enabled"
+#else
+#warning "SKIP_TEXT is NOT enabled"
+#endif
+
+
 #ifdef OBSERVED_DATA
     // Tested values
     DUMP_DATA volatile u16 testBuffer = 0;
@@ -4148,6 +4155,7 @@ enum
     STATE_SELECTION_SCRIPT_MAY_RUN
 };
 
+#ifdef OBSERVED_DATA
 void DumpMonData(){
     s32 i;
     for (i = 0; i < PARTY_SIZE; i++)
@@ -4228,13 +4236,13 @@ void DumpLegalMoves(int gActiveBattler){
         legalSwitchActions[i] = TRUE; 
     }
 }
-
+#endif // OBSERVED_DATA
 
 
 static void HandleTurnActionSelectionState(void)
 {
     s32 i;
-
+    // DebugPrintf("HandleTurnActionSelectionState\n");
     // PrintPokemonsData();
     #ifdef OBSERVED_DATA
         DumpMonData();
@@ -4377,7 +4385,6 @@ static void HandleTurnActionSelectionState(void)
             {
                 RecordedBattle_SetBattlerAction(gActiveBattler, gBattleBufferB[gActiveBattler][1]);
                 gChosenActionByBattler[gActiveBattler] = gBattleBufferB[gActiveBattler][1];
-                gChosenActionByBattler[gActiveBattler] = B_ACTION_RUN;
                 
                 switch (gBattleBufferB[gActiveBattler][1])
                 {
